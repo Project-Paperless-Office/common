@@ -75,6 +75,8 @@ public class ApplyTemplate {
             Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
             
             stripper.writeText(doc, dummy);
+            doc.close();
+            
             HashMap<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
             fileValues.put(file.getName(), values);
 		}
