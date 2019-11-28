@@ -2,10 +2,12 @@ package org.paperless.de.parser;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
+import org.paperless.de.util.Attribute;
 
 public class TextStripper extends PDFTextStripper {
 	
@@ -50,6 +52,23 @@ public class TextStripper extends PDFTextStripper {
 					break;
 				}
 			}
+		}
+		
+		return ret;
+	}
+	
+	public HashMap<String, String> getAttrValues(List<Attribute> attributes, float xTol, float yTol) {
+		HashMap<String, String> ret = new HashMap<String, String>();
+		ATTRLOOP:for (Attribute attr : attributes) {
+			for (PdfString text : texts) {
+				if (Math.abs(attr.xStart - text.getFirstX()) <= xTol) {
+					if (Math.abs(attr.yStart - text.getFirstY()) <= yTol) {
+						ret.put(attr.name, text.getText());
+						continue ATTRLOOP;
+					}
+				}
+			}
+			ret.put(attr.name, "N/A");
 		}
 		
 		return ret;

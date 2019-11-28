@@ -64,18 +64,14 @@ public class CreateTemplate {
 	
 	public void parse() throws IOException {		
 		List <DocWrapper> docs = new ArrayList<DocWrapper>();
-		if (input.isDirectory()) {			
-			FilenameFilter filter = new FilenameFilter() {
-				public boolean accept(File dir, String name) {
-					return name.endsWith("pdf");
-				}
-			};
-			
-			for (File f : input.listFiles(filter)) {
-				docs.add(new DocWrapper(f));
+		FilenameFilter filter = new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return name.endsWith("pdf");
 			}
-		} else {
-			docs.add(new DocWrapper(input));
+		};
+		
+		for (File f : input.listFiles(filter)) {
+			docs.add(new DocWrapper(f));
 		}
 		
 		texts = new HashMap<String, TextStripper>();
@@ -133,8 +129,11 @@ public class CreateTemplate {
 			xml.writeStartElement("template");
 			
 			for (PdfString att : attributes) {
-				System.out.print("Bitte Name für das Attribut mit dem Namen " + att.getText() + " eingeben: ");
+				System.out.print("Bitte Name für das Attribut mit dem Wert " + att.getText() + " eingeben: (\"discard\" zum Löschen)");
 				String name = scanner.nextLine();
+				if (name.equals("discard")) {
+					continue;
+				}
 				
 				xml.writeStartElement("attribute");
 				
@@ -254,27 +253,27 @@ public class CreateTemplate {
 				}
 				if (++i < args.length) {
 					try {
-						xTol = Float.parseFloat(args[i]);
+						yTol = Float.parseFloat(args[i]);
 					} catch (NumberFormatException e) {
 						printUsage();
-						throw new IllegalArgumentException("Nach --xTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Nach --yTolerance muss eine gültige Gleitkommazahl angegeben werden.");
 					}
-					if (xTol < 0) {
+					if (yTol < 0) {
 						printUsage();
-						throw new IllegalArgumentException("Die X-Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Die Y-Toleranz darf nicht negativ sein.");
 					}
 				} else {
 					printUsage();
-					throw new IllegalArgumentException("Nach --xTolerance muss eine Gleitkommazahl Datei angegeben werden.");
+					throw new IllegalArgumentException("Nach --yTolerance muss eine Gleitkommazahl Datei angegeben werden.");
 				}
 			}
 		}
 		
 		if (xTol < 0) {
-			xTol = 5;
+			xTol = 3;
 		}
 		if (yTol < 0) {
-			yTol = 5;
+			yTol = 3;
 		}
 		
 		if (input == null) {
