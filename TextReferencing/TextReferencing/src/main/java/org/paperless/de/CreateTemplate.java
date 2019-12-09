@@ -1,13 +1,10 @@
 package org.paperless.de;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +45,12 @@ public class CreateTemplate {
 	 * WERT: Liste von PDFStrings</p>
 	 */
 	private Map<String, TextStripper> texts;
+	
+	/**
+	 * Liste mit bereits verwendeten Attributnamen, damit keiner doppelt
+	 * verwendet wird
+	 */
+	private List<String> createdAttributes = new ArrayList<String>();
 	
 	/**
 	 * Toleranz beim Textvergleich in X-Richtung
@@ -136,8 +139,9 @@ public class CreateTemplate {
 	}
 	
 	/**
-	 * 
+	 * Parst alle PDF-Dateien im Eingabeordner
 	 * @throws IOException
+	 * 			Fehler beim Lesen der Datei
 	 */
 	public void parse() throws IOException {		
 		List <DocWrapper> docs = new ArrayList<DocWrapper>();
@@ -156,16 +160,16 @@ public class CreateTemplate {
 			System.out.println("Verarbeite " + doc.filename + "...");
 			
 			TextStripper stripper = new TextStripper();
-			stripper.setSortByPosition( true );
-            stripper.setStartPage( 1 );
-            stripper.setEndPage( doc.doc.getNumberOfPages() );
-
-            Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
-            stripper.writeText(doc.doc, dummy);
+			stripper.parse(doc.doc);
+			
             texts.put(doc.filename, stripper);
 		}
 	}
 	
+	/**
+	 * 
+	 * @throws Exception
+	 */
 	public void lookForSimilarities() throws Exception {
 		if (texts.size() < 2) {
 			throw new IllegalArgumentException("Benötigt min. 2 Dateien zum Vergleich");
@@ -202,42 +206,117 @@ public class CreateTemplate {
 		Scanner scanner = new Scanner(System.in);
 		
 		try {			
+//			xml.writeStartDocument();
+//			xml.writeStartElement("template");
+//			
+//			for (PdfString att : attributes) {
+//				System.out.print("Bitte Name für das Attribut mit dem Wert " + att.getText() + " eingeben: (\"discard\" zum Löschen)");
+//				String name = scanner.nextLine();
+//				if (name.equals("discard")) {
+//					continue;
+//				}
+//				
+//				xml.writeStartElement("attribute");
+//				
+//				xml.writeStartElement("name");
+//				xml.writeCharacters(name);
+//				xml.writeEndElement();
+//				
+//				xml.writeStartElement("page");
+//				xml.writeCharacters("" + att.getPageNum());
+//				xml.writeEndElement();
+//				
+//				xml.writeStartElement("x-start");
+//				xml.writeCharacters("" + att.getFirstX());
+//				xml.writeEndElement();
+//				
+//				xml.writeStartElement("y-start");
+//				xml.writeCharacters("" + att.getFirstY());
+//				xml.writeEndElement();
+//				
+//				xml.writeStartElement("x-end");
+//				xml.writeCharacters("" + att.getLastX());
+//				xml.writeEndElement();
+//				
+//				xml.writeStartElement("y-end");
+//				xml.writeCharacters("" + att.getLastY());
+//				xml.writeEndElement();
+//				
+//				xml.writeEndElement();
+//			}
+//			
+//			xml.writeEndDocument();
+			
+			System.out.println("Attribute:\n");
+			for (int i = 0; i < attributes.size(); i++) {
+				System.out.println("[" + (i+1) + "] - " + attributes.get(i).getText());
+			}
 			xml.writeStartDocument();
 			xml.writeStartElement("template");
-			
-			for (PdfString att : attributes) {
-				System.out.print("Bitte Name für das Attribut mit dem Wert " + att.getText() + " eingeben: (\"discard\" zum Löschen)");
-				String name = scanner.nextLine();
-				if (name.equals("discard")) {
-					continue;
+			while(true) {
+				System.out.println("Bitte den Index des nächsten zu speichernden Attributs angeben oder STOP");
+				String next = scanner.nextLine();
+				if (next.equalsIgnoreCase("STOP")) {
+					xml.writeEndDocument();
+					break;
+				} else {
+					if (next.startsWith("[")) {
+						next = next.substring(1);
+					}
+					if (next.endsWith("]")) {
+						next = next.substring(0, next.length() - 1);
+					}
+					try {
+						int attIndex = Integer.parseInt(next);
+						if (attIndex < 1 || attIndex > attributes.size()) {
+							throw new NumberFormatException("Ungültiges Attribut: [" + attIndex + "] ist kein Index eines gelisteten Attributs.");
+						}
+						System.out.println("Bitte einen Namen für das Attribut eingeben: ");
+						String name = scanner.nextLine();
+						if (name.isEmpty()) {
+							throw new NumberFormatException("Der Sttributname darf nicht leer sein.");
+						}
+						if (createdAttributes.contains(name)) {
+							throw new NumberFormatException("Es existiert bereits ein Attribut mit dem Namen " + name);
+						}
+						createdAttributes.add(name);
+						
+						PdfString att = attributes.get(attIndex - 1);
+						
+						xml.writeStartElement("attribute");
+						
+						xml.writeStartElement("name");
+						xml.writeCharacters(name);
+						xml.writeEndElement();
+						
+						xml.writeStartElement("page");
+						xml.writeCharacters("" + att.getPageNum());
+						xml.writeEndElement();
+						
+						xml.writeStartElement("x-start");
+						xml.writeCharacters("" + att.getFirstX());
+						xml.writeEndElement();
+						
+						xml.writeStartElement("y-start");
+						xml.writeCharacters("" + att.getFirstY());
+						xml.writeEndElement();
+						
+						xml.writeStartElement("x-end");
+						xml.writeCharacters("" + att.getLastX());
+						xml.writeEndElement();
+						
+						xml.writeStartElement("y-end");
+						xml.writeCharacters("" + att.getLastY());
+						xml.writeEndElement();
+						
+						xml.writeEndElement();
+					} catch (NumberFormatException e) {
+						System.out.println(e.getLocalizedMessage());
+					}
 				}
-				
-				xml.writeStartElement("attribute");
-				
-				xml.writeStartElement("name");
-				xml.writeCharacters(name);
-				xml.writeEndElement();
-				
-				xml.writeStartElement("x-start");
-				xml.writeCharacters("" + att.getFirstX());
-				xml.writeEndElement();
-				
-				xml.writeStartElement("y-start");
-				xml.writeCharacters("" + att.getFirstY());
-				xml.writeEndElement();
-				
-				xml.writeStartElement("x-end");
-				xml.writeCharacters("" + att.getLastX());
-				xml.writeEndElement();
-				
-				xml.writeStartElement("y-end");
-				xml.writeCharacters("" + att.getLastY());
-				xml.writeEndElement();
-				
-				xml.writeEndElement();
 			}
-			
 			xml.writeEndDocument();
+			
 		} catch (Exception e) {
 			throw new Exception("Fehler beim Schreiben der XML");
 		} finally {

@@ -11,6 +11,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -129,7 +130,7 @@ public class ApplyTemplate {
 		//Schlüssel der äußeren Map: Dateiname
 		//Schlüssel der inneren Map: Attributname
 		//Wert der inneren Map: Attributwert
-		HashMap<String, HashMap<String, String>> fileValues = new HashMap<String, HashMap<String, String>>();
+		Map<String, Map<String, String>> fileValues = new HashMap<String, Map<String, String>>();
 		
 		//Filter, um nur PDF-Dateien auszuwählen
 		FilenameFilter filter = new FilenameFilter() {
@@ -140,15 +141,10 @@ public class ApplyTemplate {
 		for (File file : pdf.listFiles(filter)) {
 			PDDocument doc = PDDocument.load(file);
 			TextStripper stripper = new TextStripper();
-			stripper.setSortByPosition( true );
-            stripper.setStartPage( 1 );
-            stripper.setEndPage( doc.getNumberOfPages() );
-            Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
-            
-            stripper.writeText(doc, dummy);
+			stripper.parse(doc);
             doc.close();
             
-            HashMap<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
+            Map<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
             fileValues.put(file.getName(), values);
 		}
 		//Ausgabe der Werte
@@ -163,7 +159,7 @@ public class ApplyTemplate {
 	 * 			SCHLÜSSEL (innere Map): Attributname
 	 * 			WERT (innere Map): Attributwert
 	 */
-	public void outputValues(HashMap<String, HashMap<String, String>> values) {
+	public void outputValues(Map<String, Map<String, String>> values) {
 		//Ausgabe auf Konsole
 		System.out.print("Dateiname           ");
 		//Ausgabe der Attributnamen
@@ -229,12 +225,10 @@ public class ApplyTemplate {
 			Node n = attrProp.item(i);
 			if (n.getNodeName().equals("name")) {
 				ret.name = n.getTextContent();
+			} else if (n.getNodeName().equals("page")) {				
+				ret.page = Integer.parseInt(n.getTextContent());
 			} else if (n.getNodeName().equals("x-start")) {
-				try {
-					ret.xStart = Float.parseFloat(n.getTextContent());
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				ret.xStart = Float.parseFloat(n.getTextContent());
 			} else if (n.getNodeName().equals("y-start")) {
 				ret.yStart = Float.parseFloat(n.getTextContent());
 			} else if (n.getNodeName().equals("x-end")) {

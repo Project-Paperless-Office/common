@@ -11,9 +11,12 @@ public class PdfString {
 	
 	private float firstX, firstY, lastX, lastY;
 	
-	public PdfString (String text, List<TextPosition> positions) {
+	private int pageNum;
+	
+	public PdfString (String text, List<TextPosition> positions, int pageNum) {
 		this.text = text;
 		this.positions = positions;
+		this.pageNum = pageNum;
 		
 		calcTextBox();
 	}
@@ -61,5 +64,9 @@ public class PdfString {
 
 	public String getText() {
 		return text;
+	}
+	
+	public int getPageNum() {
+		return pageNum;
 	}
 }
