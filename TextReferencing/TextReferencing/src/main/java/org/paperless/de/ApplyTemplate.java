@@ -1,7 +1,9 @@
 package org.paperless.de;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -22,14 +24,50 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Klasse zur Anwendung eines Templates auf eine Menge PDF-Dokumente
+ * 
+ * @author nba
+ */
 public class ApplyTemplate {
 	
-	private File pdf, xml, output;
+	/**
+	 * PDF-Eingabeordner
+	 */
+	private File pdf;
 	
+	/**
+	 * XML-Attributtemplate
+	 */
+	private File xml;
+	
+	/**
+	 * CSV-Ausgabedatei
+	 */
+	private File output;
+	
+	/**
+	 * Toleranzen in X- und Y-Richtung. Derzeit werden nur X-Start und Y-Start verglichen.
+	 */
 	private float xTol, yTol;
 	
+	/**
+	 * Liste der geparsten Attribute aus {@link #xml dem Template}.
+	 */
 	private List<Attribute> attrList;
 
+	/**
+	 * Hauptmethode
+	 * @param args
+	 * <table>
+	 * <tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * <tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
+	 * <tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
+	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
+	 * <tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * </table>
+	 */
 	public static void main(String[] args) {
 		try {
 			ApplyTemplate inst = new ApplyTemplate(args);
@@ -41,12 +79,34 @@ public class ApplyTemplate {
 		}
 	}
 	
+	/**
+	 * Konstruktor, liest Kommadozeilenparameter
+	 * @param args
+	 * <table>
+	 * <tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * <tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
+	 * <tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
+	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
+	 * <tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * </table>
+	 */
 	public ApplyTemplate(String[] args) {
 		readArgs(args);
 	}
 	
-	public void readAttributes() throws ParserConfigurationException, SAXException, IOException {
+	/**
+	 * liest die Attribute aus der {@link #xml Templatedatei}
+	 * @throws ParserConfigurationException
+	 * 			Fehler beim Parsen der XML
+	 * @throws SAXException
+	 * 			Fehler beim Parsen der XML
+	 * @throws IOException
+	 * 			Fehler beim Lesen der XML-Datei
+	 */
+	public void readAttributes() throws ParserConfigurationException, SAXException, IOException {		
 		attrList = new ArrayList<Attribute>();
+		//Parsen der XML
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
 		Document doc = builder.parse(xml);
@@ -54,16 +114,27 @@ public class ApplyTemplate {
 		
 		NodeList attrNodeList = doc.getElementsByTagName("attribute");
 		for (int i = 0; i < attrNodeList.getLength(); i++) {
+			//Lesen aller Attribute
 			attrList.add(readAttribute(attrNodeList.item(i)));
 		}
 	}
 	
+	/**
+	 * Vergleicht Attribute der Dateien mit der Attributliste
+	 * @throws IOException
+	 * 			Fehler beim Lesen einer PDF
+	 */
 	public void applyAttributes() throws IOException {
+		//Speichern der Attributwerte
+		//Schlüssel der äußeren Map: Dateiname
+		//Schlüssel der inneren Map: Attributname
+		//Wert der inneren Map: Attributwert
 		HashMap<String, HashMap<String, String>> fileValues = new HashMap<String, HashMap<String, String>>();
 		
+		//Filter, um nur PDF-Dateien auszuwählen
 		FilenameFilter filter = new FilenameFilter() {
 			public boolean accept(File dir, String name) {
-				return name.endsWith("pdf");
+				return name.endsWith(".pdf") || name.endsWith(".PDF");
 			}
 		};
 		for (File file : pdf.listFiles(filter)) {
@@ -80,12 +151,22 @@ public class ApplyTemplate {
             HashMap<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
             fileValues.put(file.getName(), values);
 		}
-		
+		//Ausgabe der Werte
 		outputValues(fileValues);
 	}
 	
+	/**
+	 * Methode zur Ausgabe der Attributwerte
+	 * @param values
+	 * 			Attributwerte<br>
+	 * 			SCHLÜSSEL (äußere Map): Dateiname
+	 * 			SCHLÜSSEL (innere Map): Attributname
+	 * 			WERT (innere Map): Attributwert
+	 */
 	public void outputValues(HashMap<String, HashMap<String, String>> values) {
+		//Ausgabe auf Konsole
 		System.out.print("Dateiname           ");
+		//Ausgabe der Attributnamen
 		for (Attribute attr : attrList) {
 			System.out.print(attr.name);
 			for (int i = 0; i < 20 - attr.name.length(); i++) {
@@ -94,6 +175,7 @@ public class ApplyTemplate {
 		}
 		System.out.println();		
 		
+		//Ausgabe der Attributwerte
 		for (String file : values.keySet()) {
 			System.out.print(file);
 			for (int i = 0; i < 20 - file.length(); i++) {
@@ -108,8 +190,37 @@ public class ApplyTemplate {
 			}
 			System.out.println();
 		}
+		
+		//Ausgabe in CSV-Datei
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(output));
+			bw.write("Datei;");
+			for (Attribute attr : attrList) {
+				bw.write(attr.name + ';');
+			}
+			bw.newLine();
+			for (String file : values.keySet()) {
+				bw.write(file + ';');
+				for (Attribute attr : attrList) {
+					String value = values.get(file).get(attr.name);
+					bw.write(value + ';');
+				}
+				bw.newLine();
+			}
+			bw.close();
+		} catch (IOException e) {
+			System.out.println("[ERROR] Error writing to output file " + output.getAbsolutePath());
+			e.printStackTrace(System.out);
+		}		
 	}
 	
+	/**
+	 * liest ein Attribut aus der XML-Attributtemplatedatei
+	 * @param node
+	 * 			XML-Node eines Attributs
+	 * @return
+	 * 			{@link Attribute Attributobjekt}
+	 */
 	private Attribute readAttribute(Node node) {
 		System.out.println(node.getTextContent());
 		NodeList attrProp = node.getChildNodes();
@@ -135,6 +246,19 @@ public class ApplyTemplate {
 		return ret;
 	}
 	
+	/**
+	 * liest Kommandozeilenparameter
+	 * @param args
+	 * 		<table>
+	 * 			<tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * 			<tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
+	 * 			<tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
+	 * 			<tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
+	 * 			<tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
+	 * 			<tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * 		</table>
+	 * @throws IllegalArgumentException
+	 */
 	private void readArgs(String[] args) throws IllegalArgumentException {
 		pdf = null;
 		output = null;
@@ -266,13 +390,16 @@ public class ApplyTemplate {
 		}
 	}
 	
+	/**
+	 * Gibt Kommandozeilenparameter aus 
+	 */
 	private void printUsage() {
 		System.out.println("Nutzung: " + this.getClass().getSimpleName() + " --pdfPath PDF-Verzeichnis --attributes attr.xml"
-				+ " [--output result.txt] [--tolerance Toleranz | --xTolerance X-Toleranz --yTolerance Y-Toleranz]");
+				+ " [--output result.csv] [--tolerance Toleranz | --xTolerance X-Toleranz --yTolerance Y-Toleranz]");
 		System.out.println();
 		System.out.println("\t--pdfPath            \t\tPDF-Eingabeverzeichnis");
 		System.out.println("\t--attributes         \t\tXML-Datei mit den Attributen");
-		System.out.println("\t--output             \t\tAusgabedatei mit Liste der Attributwerte");
+		System.out.println("\t--output             \t\tCSV-Ausgabedatei mit Liste der Attributwerte");
 		System.out.println("\t--tolerance          \t\tSetzt Toleranz für den Vergleich der Textkoordinaten (float)");
 		System.out.println("\t--xTolerance         \t\tSetzt Toleranz in X-Richtung (float)");
 		System.out.println("\t--yTolerance         \t\tSetzt Toleranz in Y-Richtung (float)");

@@ -21,47 +21,124 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.PdfString;
 import org.paperless.de.parser.TextStripper;
 
+/**
+ * Klasse zur Erstellung einer XML-Templatedatei
+ * @author nba
+ */
 public class CreateTemplate {
 	
-	private File input, output;
+	/**
+	 * Eingabeverzeichnis mit den PDF-Dateien
+	 */
+	private File input;
 	
+	/**
+	 * XML-Templatedatei
+	 */
+	private File output;
+	
+	/**
+	 * Writer in die Templatedatei
+	 */
 	private BufferedWriter out;
 	
+	/**
+	 * <p>enthält geparste Texte</p>
+	 * <p>SCHLÜSSEL: PDF-Dateiname<br>
+	 * WERT: Liste von PDFStrings</p>
+	 */
 	private Map<String, TextStripper> texts;
 	
-	private float xTol, yTol;
+	/**
+	 * Toleranz beim Textvergleich in X-Richtung
+	 */
+	private float xTol;
 	
+	/**
+	 * Toleranz beim Textvergleich in Y-Richtung
+	 */
+	private float yTol;
+	
+	/**
+	 * Wrapper-Klasse für ein PDF-Dokument. Speichert Dateiname und
+	 * geparstes Dokument
+	 */
 	private class DocWrapper {
+		/**
+		 * mit PDFBox geparstes Dokument
+		 */
 		public PDDocument doc;
+		
+		/**
+		 * Dateiname des Dokuments
+		 */
 		public String filename;
 
+		/**
+		 * Konstruktor zum Parsen einer PDF-Datei
+		 * @param file
+		 * 			PDF-Datei
+		 * @throws IOException
+		 * 			Fehler beim Lesen der Datei
+		 */
 		public DocWrapper(File file) throws IOException {
 			this.doc = PDDocument.load(file);
 			this.filename = file.getName();
 		}
 	};
 	
-	public static void main(String[] args) throws Exception {
+	/**
+	 * Hauptmethode
+	 * @param args Kommandozeilenparameter
+	 * <table>
+	 * <tr><td>--input</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * <tr><td>--output</td><td>Pfad der XML-Attributdatei, die erstellt werden soll</td></tr>
+	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in Y-Richtung beim Vergleich der Textpositionen</td></tr> 
+	 * </table>
+	 */
+	public static void main(String[] args) {
 		CreateTemplate inst;
 		try {
 			inst = new CreateTemplate(args);
+			
+			inst.parse();
+			
+			inst.lookForSimilarities();
+			
+			inst.finish();
 		} catch (IllegalArgumentException e) {
 			System.out.println('\n' + e.getMessage());
-			return;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		
-		inst.parse();
-		
-		inst.lookForSimilarities();
-		
-		inst.finish();
 	}
 
+	/**
+	 * Standardkonstruktor, liest Kommandozeilenargumente
+	 * @param args  Kommandozeilenparameter
+	 * <table>
+	 * <tr><td>--input</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * <tr><td>--output</td><td>Pfad der XML-Attributdatei, die erstellt werden soll</td></tr>
+	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in Y-Richtung beim Vergleich der Textpositionen</td></tr> 
+	 * </table>
+	 * @throws IOException
+	 * 			Fehler beim Erstellen der Ausgabedatei
+	 * @throws IllegalArgumentException
+	 * 			Ungültige Kommandozeilenparameter
+	 */
 	public CreateTemplate(String[] args) throws IOException, IllegalArgumentException {
 		readArgs(args);
 		out = new BufferedWriter(new FileWriter(output, true));
 	}
 	
+	/**
+	 * 
+	 * @throws IOException
+	 */
 	public void parse() throws IOException {		
 		List <DocWrapper> docs = new ArrayList<DocWrapper>();
 		FilenameFilter filter = new FilenameFilter() {

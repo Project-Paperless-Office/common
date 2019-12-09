@@ -35,6 +35,48 @@
 		        </execution>
 		    </executions>
 		</plugin>
+		<plugin>
+			<artifactId>maven-assembly-plugin</artifactId>
+			<executions>
+				<execution>
+					<id>build-a</id>
+					<configuration>
+						<archive>
+							<manifest>
+								<mainClass>org.paperless.de.CreateTemplate</mainClass>
+							</manifest>
+						</archive>
+						<descriptorRefs>
+							<descriptorRef>jar-with-dependencies</descriptorRef>
+						</descriptorRefs>
+						<finalName>CreateTemplate.jar</finalName>
+					</configuration>
+					<phase>package</phase>
+					<goals>
+						<goal>single</goal>
+					</goals>
+				</execution>
+				<execution>
+					<id>build-b</id>
+					<configuration>
+						<archive>
+							<manifest>
+								<mainClass>org.paperless.de.ApplyTemplate</mainClass>
+							</manifest>
+						</archive>
+						<descriptorRefs>
+							<descriptorRef>jar-with-dependencies</descriptorRef>
+						</descriptorRefs>
+						<finalName>ApplyTemplate.jar</finalName>
+					</configuration>
+					<phase>package</phase>
+					<goals>
+						<goal>single</goal>
+					</goals>
+				</execution>
+			</executions>
+		</plugin>
+		<!-- 
   		<plugin>
 	        <artifactId>maven-jar-plugin</artifactId>
 	        <version>3.1.1</version>
@@ -54,6 +96,7 @@
 	          </descriptorRefs>
 	        </configuration>
     	</plugin>
+    	 -->
   	</plugins>
   </build>
 
