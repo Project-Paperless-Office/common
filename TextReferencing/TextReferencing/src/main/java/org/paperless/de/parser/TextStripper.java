@@ -27,6 +27,10 @@ public class TextStripper extends PDFTextStripper {
 	 */
 	private List<PdfString> texts;
 	
+	/**
+	 * gerade geparste Seitennummer - aus irgendeinem Grund nicht in
+	 * {@link TextPosition} enthalten.
+	 */
 	private int currentPageNum;
 
 	/**
@@ -40,12 +44,23 @@ public class TextStripper extends PDFTextStripper {
 		this.texts = new ArrayList<PdfString>();
 	}
 	
+	/**
+	 * Liest texte aus einem PDF-Dokument. Jede Seite des Dokuments wird
+	 * einzeln bearbeitet, damit die Seitenzahlen im Attribut mit gespeichert
+	 * werden können.
+	 * 
+	 * @param doc
+	 * 			zu bearbeitendes PDF-Dokument
+	 * @throws IOException
+	 * 			Fehler im Dokument
+	 */
 	public void parse(PDDocument doc) throws IOException {
 		setSortByPosition(true);
+		Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+		
 		for (currentPageNum = 1; currentPageNum <= doc.getNumberOfPages(); currentPageNum++) {
 			setStartPage(currentPageNum);
-            setEndPage(currentPageNum);
-            Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+            setEndPage(currentPageNum);            
             writeText(doc, dummy);
 		}
 	}
@@ -63,10 +78,11 @@ public class TextStripper extends PDFTextStripper {
 		
 		if (!text.trim().isEmpty()) {
 			List<List<TextPosition>> splitPos = splitText(positions);
-			for (List<TextPosition> pos : splitPos) {
-				String splitText = getPositionsText(pos);
-				if (!splitText.isEmpty()) {
-					texts.add(new PdfString(splitText, pos, currentPageNum));
+			if (splitPos.size() == 1) {
+				texts.add(new PdfString(text, positions, currentPageNum));
+			} else {
+				for (List<TextPosition> pos : splitPos) {
+					texts.add(new PdfString(pos, currentPageNum));
 				}
 			}
 		}
@@ -154,6 +170,16 @@ public class TextStripper extends PDFTextStripper {
 		return ret;
 	}
 	
+	/**
+	 * Trennt den Text aus der Glyphliste in mehrere Glyphlisten, wenn der
+	 * Abstand zwischen zwei aufeinanderfolgenden Zeichen zu groß ist.
+	 * 
+	 * @param position
+	 * 			Glyphliste aus dem Text - sollte geordnet sein
+	 * @return
+	 * 			eine Liste von Unterglyphlisten, darin sollten alle Glyphen aus
+	 * 			der Originalliste vorkommen. 
+	 */
 	private List<List<TextPosition>> splitText(List<TextPosition> position) {
 		List<List<TextPosition>> ret = new ArrayList<List<TextPosition>>();
 		List<TextPosition> currentList = new ArrayList<TextPosition>();
@@ -171,14 +197,6 @@ public class TextStripper extends PDFTextStripper {
 			lastXEnd = pos.getEndX();
 		}
 		
-		return ret;
-	}
-	
-	private String getPositionsText(List<TextPosition> pos) {
-		String ret = "";
-		for (TextPosition p : pos) {
-			ret += p.getUnicode();
-		}
 		return ret;
 	}
 }

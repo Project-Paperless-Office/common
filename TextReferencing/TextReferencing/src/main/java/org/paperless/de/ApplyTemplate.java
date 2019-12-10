@@ -1,13 +1,10 @@
 package org.paperless.de;
 
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -147,7 +144,8 @@ public class ApplyTemplate {
             Map<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
             fileValues.put(file.getName(), values);
 		}
-		//Ausgabe der Werte
+//		checkForValuePatterns(fileValues);
+		//Ausgabe der Werte		
 		outputValues(fileValues);
 	}
 	
@@ -239,6 +237,50 @@ public class ApplyTemplate {
 		}
 		return ret;
 	}
+	
+//	private void checkForValuePatterns(Map<String, Map<String, String>> fileValues) {
+//		Map<String, String> leadingPattern = new HashMap<String, String>();
+//		Map<String, String> trailingPattern = new HashMap<String, String>();
+//		
+//		for (Map<String, String> values : fileValues.values()) {
+//			for (String attribute : values.keySet()) {
+//				String value = values.get(attribute);
+//				
+//				String valuePatternLeading = leadingPattern.get(attribute);				
+//				if (valuePatternLeading == null) {
+//					leadingPattern.put(attribute, value);
+//				} else {
+//					String newPattern = "";
+//					for (int i = 0; i < valuePatternLeading.length(); i++) {
+//						if (value.length() <= i) {
+//							break;
+//						}
+//						char ch = valuePatternLeading.charAt(i);
+//						if (value.charAt(i) == ch) {
+//							newPattern += ch;
+//						} else {
+//							break;
+//						}
+//					}
+//					leadingPattern.put(attribute, newPattern);
+//				}
+//				
+//				String valuePatternTrailing = trailingPattern.get(attribute);				
+//				if (valuePatternTrailing == null) {
+//					trailingPattern.put(attribute, value);
+//				} else {
+//					String[] trailingParts = valuePatternTrailing.split("\\s");
+//					
+//				}
+//			}
+//		}
+//		
+//		for (Attribute attr : attrList) {
+//			System.out.println("============ " + attr.name + " ===============");
+//			System.out.println("Trailing Pattern: \"" + trailingPattern.get(attr.name) + '"');
+//			System.out.println("Leading Pattern: \"" + leadingPattern.get(attr.name) + '"');
+//		}
+//	}
 	
 	/**
 	 * liest Kommandozeilenparameter

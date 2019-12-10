@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamWriter;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.PdfString;
 import org.paperless.de.parser.TextStripper;
+import org.paperless.de.util.AttributeXMLExporter;
 
 /**
  * Klasse zur Erstellung einer XML-Templatedatei
@@ -200,64 +198,18 @@ public class CreateTemplate {
 		out.close();
 	}
 	
-	private void exportAttributes(List<PdfString> attributes) throws Exception {
- 		BufferedWriter fileWriter = new BufferedWriter(new FileWriter(output));
-		XMLStreamWriter xml = XMLOutputFactory.newInstance().createXMLStreamWriter(fileWriter);
-		Scanner scanner = new Scanner(System.in);
-		
-		try {			
-//			xml.writeStartDocument();
-//			xml.writeStartElement("template");
-//			
-//			for (PdfString att : attributes) {
-//				System.out.print("Bitte Name für das Attribut mit dem Wert " + att.getText() + " eingeben: (\"discard\" zum Löschen)");
-//				String name = scanner.nextLine();
-//				if (name.equals("discard")) {
-//					continue;
-//				}
-//				
-//				xml.writeStartElement("attribute");
-//				
-//				xml.writeStartElement("name");
-//				xml.writeCharacters(name);
-//				xml.writeEndElement();
-//				
-//				xml.writeStartElement("page");
-//				xml.writeCharacters("" + att.getPageNum());
-//				xml.writeEndElement();
-//				
-//				xml.writeStartElement("x-start");
-//				xml.writeCharacters("" + att.getFirstX());
-//				xml.writeEndElement();
-//				
-//				xml.writeStartElement("y-start");
-//				xml.writeCharacters("" + att.getFirstY());
-//				xml.writeEndElement();
-//				
-//				xml.writeStartElement("x-end");
-//				xml.writeCharacters("" + att.getLastX());
-//				xml.writeEndElement();
-//				
-//				xml.writeStartElement("y-end");
-//				xml.writeCharacters("" + att.getLastY());
-//				xml.writeEndElement();
-//				
-//				xml.writeEndElement();
-//			}
-//			
-//			xml.writeEndDocument();
+	private void exportAttributes(List<PdfString> attributes) throws Exception {		
+		try (AttributeXMLExporter xml = new AttributeXMLExporter(output);
+				Scanner scanner = new Scanner(System.in);){
 			
 			System.out.println("Attribute:\n");
 			for (int i = 0; i < attributes.size(); i++) {
 				System.out.println("[" + (i+1) + "] - " + attributes.get(i).getText());
 			}
-			xml.writeStartDocument();
-			xml.writeStartElement("template");
 			while(true) {
 				System.out.println("Bitte den Index des nächsten zu speichernden Attributs angeben oder STOP");
 				String next = scanner.nextLine();
 				if (next.equalsIgnoreCase("STOP")) {
-					xml.writeEndDocument();
 					break;
 				} else {
 					if (next.startsWith("[")) {
@@ -274,61 +226,22 @@ public class CreateTemplate {
 						System.out.println("Bitte einen Namen für das Attribut eingeben: ");
 						String name = scanner.nextLine();
 						if (name.isEmpty()) {
-							throw new NumberFormatException("Der Sttributname darf nicht leer sein.");
+							throw new NumberFormatException("Der Attributname darf nicht leer sein.");
 						}
 						if (createdAttributes.contains(name)) {
 							throw new NumberFormatException("Es existiert bereits ein Attribut mit dem Namen " + name);
 						}
-						createdAttributes.add(name);
 						
-						PdfString att = attributes.get(attIndex - 1);
+						PdfString att = attributes.get(attIndex - 1);						
+						createdAttributes.add(name);						
 						
-						xml.writeStartElement("attribute");
-						
-						xml.writeStartElement("name");
-						xml.writeCharacters(name);
-						xml.writeEndElement();
-						
-						xml.writeStartElement("page");
-						xml.writeCharacters("" + att.getPageNum());
-						xml.writeEndElement();
-						
-						xml.writeStartElement("x-start");
-						xml.writeCharacters("" + att.getFirstX());
-						xml.writeEndElement();
-						
-						xml.writeStartElement("y-start");
-						xml.writeCharacters("" + att.getFirstY());
-						xml.writeEndElement();
-						
-						xml.writeStartElement("x-end");
-						xml.writeCharacters("" + att.getLastX());
-						xml.writeEndElement();
-						
-						xml.writeStartElement("y-end");
-						xml.writeCharacters("" + att.getLastY());
-						xml.writeEndElement();
-						
-						xml.writeEndElement();
+						xml.writeAttribute(name, att);
 					} catch (NumberFormatException e) {
 						System.out.println(e.getLocalizedMessage());
 					}
 				}
 			}
-			xml.writeEndDocument();
 			
-		} catch (Exception e) {
-			throw new Exception("Fehler beim Schreiben der XML");
-		} finally {
-			try {
-				xml.close();
-			} catch (Exception e) {
-			}
-			try {
-				fileWriter.close();
-			} catch (Exception e) {
-			}
-			scanner.close();
 		}
 	}
 	
@@ -447,10 +360,10 @@ public class CreateTemplate {
 	
 	private void printUsage() {
 		System.out.println("Nutzung: " + this.getClass().getSimpleName() + " --input dateipfad"
-				+ "--output result.txt [--tolerance Toleranz | --xTolerance X-Toleranz --yTolerance Y-Toleranz]");
+				+ "--output attr.xml [--tolerance Toleranz | --xTolerance X-Toleranz --yTolerance Y-Toleranz]");
 		System.out.println();
 		System.out.println("\t--input              \t\tPDF-Eingabeverzeichnis");
-		System.out.println("\t--output             \t\tAusgabedatei mit Auswertung");
+		System.out.println("\t--output             \t\tXML-Attributdate");
 		System.out.println("\t--tolerance          \t\tSetzt Toleranz für den Vergleich der Textkoordinaten (float)");
 		System.out.println("\t--xTolerance         \t\tSetzt Toleranz in X-Richtung (float)");
 		System.out.println("\t--yTolerance         \t\tSetzt Toleranz in Y-Richtung (float)");

@@ -12,6 +12,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
   
   <build>
@@ -27,7 +29,7 @@
 		                <goal>copy-dependencies</goal>
 		            </goals>
 		            <configuration>
-		                <outputDirectory>${project.build.directory}/classes/lib</outputDirectory>
+		                <outputDirectory>${project.build.directory}/lib</outputDirectory>
 		                <overWriteReleases>false</overWriteReleases>
 		                <overWriteSnapshots>false</overWriteSnapshots>
 		                <overWriteIfNewer>true</overWriteIfNewer>
@@ -44,12 +46,14 @@
 						<archive>
 							<manifest>
 								<mainClass>org.paperless.de.CreateTemplate</mainClass>
+								<addClasspath>true</addClasspath>
+	                			<classpathPrefix>lib/</classpathPrefix>
 							</manifest>
 						</archive>
 						<descriptorRefs>
 							<descriptorRef>jar-with-dependencies</descriptorRef>
 						</descriptorRefs>
-						<finalName>CreateTemplate.jar</finalName>
+						<finalName>CreateTemplate</finalName>
 					</configuration>
 					<phase>package</phase>
 					<goals>
@@ -62,12 +66,14 @@
 						<archive>
 							<manifest>
 								<mainClass>org.paperless.de.ApplyTemplate</mainClass>
+								<addClasspath>true</addClasspath>
+	                			<classpathPrefix>lib/</classpathPrefix>
 							</manifest>
 						</archive>
 						<descriptorRefs>
 							<descriptorRef>jar-with-dependencies</descriptorRef>
 						</descriptorRefs>
-						<finalName>ApplyTemplate.jar</finalName>
+						<finalName>ApplyTemplate</finalName>
 					</configuration>
 					<phase>package</phase>
 					<goals>
