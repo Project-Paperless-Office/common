@@ -1,8 +1,6 @@
 package org.paperless.de;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,11 +29,6 @@ public class CreateTemplate {
 	 * XML-Templatedatei
 	 */
 	private File output;
-	
-	/**
-	 * Writer in die Templatedatei
-	 */
-	private BufferedWriter out;
 	
 	/**
 	 * <p>enthält geparste Texte</p>
@@ -91,7 +84,7 @@ public class CreateTemplate {
 	/**
 	 * Hauptmethode
 	 * @param args Kommandozeilenparameter
-	 * <table>
+	 * <table summary="Kommandozeilenparameter">
 	 * <tr><td>--input</td><td>Pfad des PDF-Eingabeordners</td></tr>
 	 * <tr><td>--output</td><td>Pfad der XML-Attributdatei, die erstellt werden soll</td></tr>
 	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung beim Vergleich der Textpositionen</td></tr>
@@ -107,8 +100,6 @@ public class CreateTemplate {
 			inst.parse();
 			
 			inst.lookForSimilarities();
-			
-			inst.finish();
 		} catch (IllegalArgumentException e) {
 			System.out.println('\n' + e.getMessage());
 		} catch (Exception e) {
@@ -119,7 +110,7 @@ public class CreateTemplate {
 	/**
 	 * Standardkonstruktor, liest Kommandozeilenargumente
 	 * @param args  Kommandozeilenparameter
-	 * <table>
+	 * <table summary="Kommandozeilenparameter">
 	 * <tr><td>--input</td><td>Pfad des PDF-Eingabeordners</td></tr>
 	 * <tr><td>--output</td><td>Pfad der XML-Attributdatei, die erstellt werden soll</td></tr>
 	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung beim Vergleich der Textpositionen</td></tr>
@@ -133,7 +124,6 @@ public class CreateTemplate {
 	 */
 	public CreateTemplate(String[] args) throws IOException, IllegalArgumentException {
 		readArgs(args);
-		out = new BufferedWriter(new FileWriter(output, true));
 	}
 	
 	/**
@@ -165,8 +155,14 @@ public class CreateTemplate {
 	}
 	
 	/**
-	 * 
+	 * Vergleicht zwei der geparsten PDF-Texte und exportiert die Unterschiede
+	 * als Attributliste. Der Nutzer wählt aus, aus welchen unterschiedlichen
+	 * Datenfeldern Attribute erstellt werden. Dazu wird eine Liste mit allen
+	 * gefundenen möglichen Attributen angezeigt. Aus diesen kann der Nutzer
+	 * die gewünschten heraussuchen und sie nach Angabe eines Namens in die
+	 * Attributliste einfügen.
 	 * @throws Exception
+	 * 		Es wurden noch keine 2 PDF-Dateien geparst oder Fehler beim XML-Export
 	 */
 	public void lookForSimilarities() throws Exception {
 		if (texts.size() < 2) {
@@ -194,10 +190,14 @@ public class CreateTemplate {
 		exportAttributes(compare);
 	}
 	
-	public void finish() throws IOException {
-		out.close();
-	}
-	
+	/**
+	 * Lässt den Nutzer die gewünschten Attribute aus einer Liste mit
+	 * unterschiedlichen Textwerten die Attributliste erstellen.
+	 * @param attributes
+	 * 			Liste mit möglichen Attributen, also unterschiedliche Texte
+	 * @throws Exception
+	 * 			Fehler beim XML-Export, s. {@link AttributeXMLExporter}
+	 */
 	private void exportAttributes(List<PdfString> attributes) throws Exception {		
 		try (AttributeXMLExporter xml = new AttributeXMLExporter(output);
 				Scanner scanner = new Scanner(System.in);){
@@ -245,6 +245,20 @@ public class CreateTemplate {
 		}
 	}
 	
+	/**
+	 * Liest Kommandozeilenparameter ein.
+	 * @param args
+	 * 		Kommandozeilenparameter
+	 * <table summary="Kommandozeilenparameter">
+	 * <tr><td>--input</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * <tr><td>--output</td><td>Pfad der XML-Attributdatei, die erstellt werden soll</td></tr>
+	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung beim Vergleich der Textpositionen</td></tr>
+	 * <tr><td>--xTolerance</td><td>Toleranz in Y-Richtung beim Vergleich der Textpositionen</td></tr> 
+	 * </table>
+	 * @throws IllegalArgumentException
+	 * 			ungültiger oder fehlerhaftes Argument
+	 */
 	private void readArgs(String[] args) throws IllegalArgumentException {
 		input = null;
 		output = null;
@@ -358,6 +372,9 @@ public class CreateTemplate {
 		}
 	}
 	
+	/**
+	 * Zeigt Hinweis über korrekte Benutzung in der Standardausgabe an
+	 */
 	private void printUsage() {
 		System.out.println("Nutzung: " + this.getClass().getSimpleName() + " --input dateipfad"
 				+ "--output attr.xml [--tolerance Toleranz | --xTolerance X-Toleranz --yTolerance Y-Toleranz]");

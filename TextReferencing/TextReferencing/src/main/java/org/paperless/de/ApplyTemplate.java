@@ -57,13 +57,13 @@ public class ApplyTemplate {
 	/**
 	 * Hauptmethode
 	 * @param args
-	 * <table>
+	 * <table summary="Kommandozeilenparameter">
 	 * <tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
 	 * <tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
 	 * <tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
 	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
 	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
-	 * <tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * <tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>
 	 * </table>
 	 */
 	public static void main(String[] args) {
@@ -80,13 +80,13 @@ public class ApplyTemplate {
 	/**
 	 * Konstruktor, liest Kommadozeilenparameter
 	 * @param args
-	 * <table>
-	 * <tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
-	 * <tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
-	 * <tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
-	 * <tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
-	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
-	 * <tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * <table summary="Kommandozeilenparameter">
+	 * 	<tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 * 	<tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
+	 * 	<tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
+	 * 	<tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
+	 * 	<tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
+	 * 	<tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>
 	 * </table>
 	 */
 	public ApplyTemplate(String[] args) {
@@ -285,15 +285,16 @@ public class ApplyTemplate {
 	/**
 	 * liest Kommandozeilenparameter
 	 * @param args
-	 * 		<table>
-	 * 			<tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
-	 * 			<tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
-	 * 			<tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
-	 * 			<tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
-	 * 			<tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
-	 * 			<tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>	 * 
+	 * 		<table summary="Kommandozeilenparameter">
+	 *			<tr><td>--pdfPath</td><td>Pfad des PDF-Eingabeordners</td></tr>
+	 *			<tr><td>--attributes</td><td>Pfad der XML-Attributdatei</td></tr>
+	 *			<tr><td>--output</td><td>Pfad der CSV-Ausgabedatei</td></tr>
+	 *			<tr><td>--tolerance</td><td>Toleranzen in X- und Y-Richtung bei der Anwendung der Attribute</td></tr>
+	 *			<tr><td>--xTolerance</td><td>Toleranz in X-Richtung bei der Anwendung der Attribute</td></tr>
+	 *			<tr><td>--yTolerance</td><td>Toleranz in Y-Richtung bei der Anwendung der Attribute</td></tr>
 	 * 		</table>
 	 * @throws IllegalArgumentException
+	 * 		ungültiger Kommadozeilenparameter
 	 */
 	private void readArgs(String[] args) throws IllegalArgumentException {
 		pdf = null;
