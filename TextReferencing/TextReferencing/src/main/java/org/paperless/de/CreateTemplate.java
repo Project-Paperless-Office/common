@@ -20,10 +20,16 @@ import org.paperless.de.util.AttributeXMLExporter;
  */
 public class CreateTemplate {
 	
+	public interface AttributeSelector {
+		public String[] getAttributes(String[] values);
+	};
+	
 	/**
 	 * Eingabeverzeichnis mit den PDF-Dateien
 	 */
 	private File input;
+	
+	private AttributeSelector selector;
 	
 	/**
 	 * XML-Templatedatei
@@ -36,12 +42,6 @@ public class CreateTemplate {
 	 * WERT: Liste von PDFStrings</p>
 	 */
 	private Map<String, TextStripper> texts;
-	
-	/**
-	 * Liste mit bereits verwendeten Attributnamen, damit keiner doppelt
-	 * verwendet wird
-	 */
-	private List<String> createdAttributes = new ArrayList<String>();
 	
 	/**
 	 * Toleranz beim Textvergleich in X-Richtung
@@ -123,7 +123,45 @@ public class CreateTemplate {
 	 * 			Ungültige Kommandozeilenparameter
 	 */
 	public CreateTemplate(String[] args) throws IOException, IllegalArgumentException {
+		this.selector = new AttributeSelector() {			
+			@Override
+			public String[] getAttributes(String[] value) {
+				String[] ret = new String[value.length];
+				for (int i = 0; i < value.length; i++) {					
+					Scanner sc = new Scanner(System.in);
+					System.out.println("Bitte einen Namen für das Attribut mit dem Wert \"" +
+							value + "\" angeben (\"discard\" zum löschen).");
+					ret[i] = sc.nextLine();
+					sc.close();
+					if (ret[i].equalsIgnoreCase("discard")) {
+						ret[i] = null;
+					} else {
+						ret[i] = ret[i].trim();
+					}
+				}
+				return ret;
+			}
+		};
 		readArgs(args);
+	}
+	
+	public CreateTemplate(File input, AttributeSelector selector, File output, float xTolerance, float yTolerance) {
+		this.input = input;
+		this.selector = selector;
+		this.output = output;
+		this.xTol = xTolerance;
+		this.yTol = yTolerance;
+		
+		if (input == null || !input.isDirectory()) {
+			throw new IllegalArgumentException("Eingabeverzeichnis nicht gefunden");
+		}
+		if (output == null) {
+			throw new IllegalArgumentException("Ausgabedatei darf nicht null sein");
+		}
+	}
+	
+	public CreateTemplate(File input, AttributeSelector selector, File output) {
+		this(input, selector, output, 5.0f, 5.0f);
 	}
 	
 	/**
@@ -199,48 +237,58 @@ public class CreateTemplate {
 	 * 			Fehler beim XML-Export, s. {@link AttributeXMLExporter}
 	 */
 	private void exportAttributes(List<PdfString> attributes) throws Exception {		
-		try (AttributeXMLExporter xml = new AttributeXMLExporter(output);
-				Scanner scanner = new Scanner(System.in);){
+		try (AttributeXMLExporter xml = new AttributeXMLExporter(output);){
 			
-			System.out.println("Attribute:\n");
+			String[] attributeValues = new String[attributes.size()];
 			for (int i = 0; i < attributes.size(); i++) {
-				System.out.println("[" + (i+1) + "] - " + attributes.get(i).getText());
+				attributeValues[i] = attributes.get(i).getText();
 			}
-			while(true) {
-				System.out.println("Bitte den Index des nächsten zu speichernden Attributs angeben oder STOP");
-				String next = scanner.nextLine();
-				if (next.equalsIgnoreCase("STOP")) {
-					break;
-				} else {
-					if (next.startsWith("[")) {
-						next = next.substring(1);
-					}
-					if (next.endsWith("]")) {
-						next = next.substring(0, next.length() - 1);
-					}
-					try {
-						int attIndex = Integer.parseInt(next);
-						if (attIndex < 1 || attIndex > attributes.size()) {
-							throw new NumberFormatException("Ungültiges Attribut: [" + attIndex + "] ist kein Index eines gelisteten Attributs.");
-						}
-						System.out.println("Bitte einen Namen für das Attribut eingeben: ");
-						String name = scanner.nextLine();
-						if (name.isEmpty()) {
-							throw new NumberFormatException("Der Attributname darf nicht leer sein.");
-						}
-						if (createdAttributes.contains(name)) {
-							throw new NumberFormatException("Es existiert bereits ein Attribut mit dem Namen " + name);
-						}
-						
-						PdfString att = attributes.get(attIndex - 1);						
-						createdAttributes.add(name);						
-						
-						xml.writeAttribute(name, att);
-					} catch (NumberFormatException e) {
-						System.out.println(e.getLocalizedMessage());
-					}
+			String[] attNames = selector.getAttributes(attributeValues);
+			for (int i = 0; i < attributes.size() && i < attNames.length; i++) {
+				if (attNames[i] != null && !attNames[i].isEmpty()) {
+					xml.writeAttribute(attNames[i], attributes.get(i));
 				}
 			}
+			
+//			System.out.println("Attribute:\n");
+//			for (int i = 0; i < attributes.size(); i++) {
+//				System.out.println("[" + (i+1) + "] - " + attributes.get(i).getText());
+//			}
+//			while(true) {
+//				System.out.println("Bitte den Index des nächsten zu speichernden Attributs angeben oder STOP");
+//				String next = scanner.nextLine();
+//				if (next.equalsIgnoreCase("STOP")) {
+//					break;
+//				} else {
+//					if (next.startsWith("[")) {
+//						next = next.substring(1);
+//					}
+//					if (next.endsWith("]")) {
+//						next = next.substring(0, next.length() - 1);
+//					}
+//					try {
+//						int attIndex = Integer.parseInt(next);
+//						if (attIndex < 1 || attIndex > attributes.size()) {
+//							throw new NumberFormatException("Ungültiges Attribut: [" + attIndex + "] ist kein Index eines gelisteten Attributs.");
+//						}
+//						System.out.println("Bitte einen Namen für das Attribut eingeben: ");
+//						String name = scanner.nextLine();
+//						if (name.isEmpty()) {
+//							throw new NumberFormatException("Der Attributname darf nicht leer sein.");
+//						}
+//						if (createdAttributes.contains(name)) {
+//							throw new NumberFormatException("Es existiert bereits ein Attribut mit dem Namen " + name);
+//						}
+//						
+//						PdfString att = attributes.get(attIndex - 1);						
+//						createdAttributes.add(name);						
+//						
+//						xml.writeAttribute(name, att);
+//					} catch (NumberFormatException e) {
+//						System.out.println(e.getLocalizedMessage());
+//					}
+//				}
+//			}
 			
 		}
 	}

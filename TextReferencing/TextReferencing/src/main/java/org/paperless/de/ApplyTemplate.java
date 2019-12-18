@@ -1,8 +1,6 @@
 package org.paperless.de;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +15,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.TextStripper;
 import org.paperless.de.util.Attribute;
+import org.paperless.de.util.ValueCsvExporter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -30,6 +29,24 @@ import org.xml.sax.SAXException;
 public class ApplyTemplate {
 	
 	/**
+	 * Interface, an das die gefundenen Werte aus den Dateien weitergegeben
+	 * werden.
+	 * 
+	 * @author nba
+	 */
+	public interface OutputLister {
+		
+		/**
+		 * Methode zum Erhalt von Werten aus der Datei
+		 * @param fileName
+		 * 			Name der Datei
+		 * @param attValues
+		 * 			Name und Wert der Attribute
+		 */
+		public void getFileValues(String fileName, Map<String, String> attValues);
+	};
+	
+	/**
 	 * PDF-Eingabeordner
 	 */
 	private File pdf;
@@ -40,9 +57,9 @@ public class ApplyTemplate {
 	private File xml;
 	
 	/**
-	 * CSV-Ausgabedatei
+	 * Ausgabeklasse
 	 */
-	private File output;
+	private OutputLister output;
 	
 	/**
 	 * Toleranzen in X- und Y-Richtung. Derzeit werden nur X-Start und Y-Start verglichen.
@@ -53,7 +70,7 @@ public class ApplyTemplate {
 	 * Liste der geparsten Attribute aus {@link #xml dem Template}.
 	 */
 	private List<Attribute> attrList;
-
+	
 	/**
 	 * Hauptmethode
 	 * @param args
@@ -91,6 +108,28 @@ public class ApplyTemplate {
 	 */
 	public ApplyTemplate(String[] args) {
 		readArgs(args);
+	}
+	
+	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput, float xTolerance, float yTolerance) {
+		this.pdf = pdfDir;
+		this.xml = xmlAttributes;
+		this.output = csvOutput;
+		this.xTol = xTolerance;
+		this.yTol = yTolerance;
+		
+		if (pdf == null || !pdf.isDirectory()) {
+			throw new IllegalArgumentException("Kein gültiges PDF-Verzeichnis angegeben.");
+		}
+		if (xml == null || !xml.isFile()) {
+			throw new IllegalArgumentException("Keine gültige Attributdatei angegeben.");
+		}
+		if (xTol < 0 || yTol < 0) {
+			throw new IllegalArgumentException("Die Toleranz darf nicht negativ sein.");
+		}
+	}
+	
+	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput) {
+		this(pdfDir, xmlAttributes, csvOutput, 5.0f, 5.0f);
 	}
 	
 	/**
@@ -186,26 +225,9 @@ public class ApplyTemplate {
 		}
 		
 		//Ausgabe in CSV-Datei
-		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(output));
-			bw.write("Datei;");
-			for (Attribute attr : attrList) {
-				bw.write(attr.name + ';');
-			}
-			bw.newLine();
-			for (String file : values.keySet()) {
-				bw.write(file + ';');
-				for (Attribute attr : attrList) {
-					String value = values.get(file).get(attr.name);
-					bw.write(value + ';');
-				}
-				bw.newLine();
-			}
-			bw.close();
-		} catch (IOException e) {
-			System.out.println("[ERROR] Error writing to output file " + output.getAbsolutePath());
-			e.printStackTrace(System.out);
-		}		
+		for (String file : values.keySet()) {
+			output.getFileValues(file, values.get(file));
+		}	
 	}
 	
 	/**
@@ -298,7 +320,7 @@ public class ApplyTemplate {
 	 */
 	private void readArgs(String[] args) throws IllegalArgumentException {
 		pdf = null;
-		output = null;
+		File output = null;
 		xml = null;
 		xTol = -1;
 		yTol = -1;
@@ -350,7 +372,7 @@ public class ApplyTemplate {
 					}
 				} else {
 					printUsage();
-					throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl Datei angegeben werden.");
+					throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl angegeben werden.");
 				}
 			} else if (args[i].equals("--xTolerance")) {
 				if (xTol > 0) {
@@ -423,6 +445,12 @@ public class ApplyTemplate {
 			throw new IllegalArgumentException(xml.getName() + " konnte nicht gelesen werden.");
 		}
 		if (!output.canWrite() && output.exists()) {
+			throw new IllegalArgumentException("Nach " + output.getName() + " kann nicht geschrieben werden.");
+		}
+		
+		try {
+			this.output = new ValueCsvExporter(output);
+		} catch (IOException e) {
 			throw new IllegalArgumentException("Nach " + output.getName() + " kann nicht geschrieben werden.");
 		}
 	}
