@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,6 +16,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.TextStripper;
 import org.paperless.de.util.Attribute;
+import org.paperless.de.util.ProgressListener;
 import org.paperless.de.util.ValueCsvExporter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -60,6 +62,8 @@ public class ApplyTemplate {
 	 * Ausgabeklasse
 	 */
 	private OutputLister output;
+	
+	private ProgressListener progress;
 	
 	/**
 	 * Toleranzen in X- und Y-Richtung. Derzeit werden nur X-Start und Y-Start verglichen.
@@ -110,12 +114,15 @@ public class ApplyTemplate {
 		readArgs(args);
 	}
 	
-	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput, float xTolerance, float yTolerance) {
+	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput,
+			ProgressListener progress, float xTolerance, float yTolerance) {
+		
 		this.pdf = pdfDir;
 		this.xml = xmlAttributes;
 		this.output = csvOutput;
 		this.xTol = xTolerance;
 		this.yTol = yTolerance;
+		this.progress = progress;
 		
 		if (pdf == null || !pdf.isDirectory()) {
 			throw new IllegalArgumentException("Kein gültiges PDF-Verzeichnis angegeben.");
@@ -128,8 +135,8 @@ public class ApplyTemplate {
 		}
 	}
 	
-	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput) {
-		this(pdfDir, xmlAttributes, csvOutput, 5.0f, 5.0f);
+	public ApplyTemplate(File pdfDir, File xmlAttributes, OutputLister csvOutput, ProgressListener progress) {
+		this(pdfDir, xmlAttributes, csvOutput, progress, 5.0f, 5.0f);
 	}
 	
 	/**
@@ -174,7 +181,12 @@ public class ApplyTemplate {
 				return name.endsWith(".pdf") || name.endsWith(".PDF");
 			}
 		};
-		for (File file : pdf.listFiles(filter)) {
+		File[] pdfFiles = pdf.listFiles(filter);
+		for (int i = 0; i < pdfFiles.length; i++) {			
+			File file = pdfFiles[i];
+			if (progress != null) {
+				progress.setProgress(i, pdfFiles.length, "Parsing " + file.getName());
+			}
 			PDDocument doc = PDDocument.load(file);
 			TextStripper stripper = new TextStripper();
 			stripper.parse(doc);
@@ -182,6 +194,9 @@ public class ApplyTemplate {
             
             Map<String, String> values = stripper.getAttrValues(attrList, xTol, yTol);
             fileValues.put(file.getName(), values);
+		}
+		if (progress != null) {
+			progress.setProgress(pdfFiles.length, pdfFiles.length, "Done");
 		}
 //		checkForValuePatterns(fileValues);
 		//Ausgabe der Werte		
@@ -255,6 +270,11 @@ public class ApplyTemplate {
 				ret.xEnd = Float.parseFloat(n.getTextContent());
 			} else if (n.getNodeName().equals("y-end")) {
 				ret.yEnd = Float.parseFloat(n.getTextContent());
+			} else if (n.getNodeName().equals("remove")) {
+				String remove = n.getTextContent();
+				if (remove != null) {
+					ret.removePattern = Pattern.compile(remove);
+				}
 			}
 		}
 		return ret;

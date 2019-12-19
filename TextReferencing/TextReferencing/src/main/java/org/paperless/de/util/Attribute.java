@@ -1,5 +1,7 @@
 package org.paperless.de.util;
 
+import java.util.regex.Pattern;
+
 /**
  * Speicherklasse für ein Attribut als POJO
  * 
@@ -21,4 +23,6 @@ public class Attribute {
 	 * Name des Attributs
 	 */
 	public String name;
+	
+	public Pattern removePattern;
 }

@@ -1,6 +1,7 @@
 package org.paperless.de.parser;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.pdfbox.text.TextPosition;
 
@@ -31,6 +32,9 @@ public class PdfString {
 	 * Seitenzahl
 	 */
 	private int pageNum;
+	
+	//TODO Regex in Template Creation einfügen
+	private Pattern removeRegex;
 	
 	/**
 	 * Konstruktor, wenn der Text bekannt ist

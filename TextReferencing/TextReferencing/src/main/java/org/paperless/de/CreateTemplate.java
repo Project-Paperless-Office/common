@@ -13,6 +13,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.PdfString;
 import org.paperless.de.parser.TextStripper;
 import org.paperless.de.util.AttributeXMLExporter;
+import org.paperless.de.util.ProgressListener;
 
 /**
  * Klasse zur Erstellung einer XML-Templatedatei
@@ -30,6 +31,8 @@ public class CreateTemplate {
 	private File input;
 	
 	private AttributeSelector selector;
+	
+	private ProgressListener progress;
 	
 	/**
 	 * XML-Templatedatei
@@ -145,12 +148,13 @@ public class CreateTemplate {
 		readArgs(args);
 	}
 	
-	public CreateTemplate(File input, AttributeSelector selector, File output, float xTolerance, float yTolerance) {
+	public CreateTemplate(File input, AttributeSelector selector, ProgressListener progress, File output, float xTolerance, float yTolerance) {
 		this.input = input;
 		this.selector = selector;
 		this.output = output;
 		this.xTol = xTolerance;
 		this.yTol = yTolerance;
+		this.progress = progress;
 		
 		if (input == null || !input.isDirectory()) {
 			throw new IllegalArgumentException("Eingabeverzeichnis nicht gefunden");
@@ -160,8 +164,8 @@ public class CreateTemplate {
 		}
 	}
 	
-	public CreateTemplate(File input, AttributeSelector selector, File output) {
-		this(input, selector, output, 5.0f, 5.0f);
+	public CreateTemplate(File input, AttributeSelector selector, ProgressListener progress, File output) {
+		this(input, selector, progress, output, 5.0f, 5.0f);
 	}
 	
 	/**
@@ -177,18 +181,33 @@ public class CreateTemplate {
 			}
 		};
 		
-		for (File f : input.listFiles(filter)) {
+		File[] pdfFileList = input.listFiles(filter);
+		for (int i = 0; i < pdfFileList.length; i++) {
+			File f = pdfFileList[i];
+			if (progress != null) {
+				progress.setProgress(i, pdfFileList.length, "Parsing " + f.getName());
+			}
 			docs.add(new DocWrapper(f));
+		}
+		if (progress != null) {
+			progress.setProgress(pdfFileList.length, pdfFileList.length, "Done");
 		}
 		
 		texts = new HashMap<String, TextStripper>();
-		for (DocWrapper doc : docs) {
+		for (int i = 0; i < docs.size(); i++) {
+			DocWrapper doc = docs.get(i);
+			if (progress != null) {
+				progress.setProgress(i, docs.size(), "Parsing " + doc.filename);
+			}
 			System.out.println("Verarbeite " + doc.filename + "...");
 			
 			TextStripper stripper = new TextStripper();
 			stripper.parse(doc.doc);
 			
             texts.put(doc.filename, stripper);
+		}
+		if (progress != null) {
+			progress.setProgress(docs.size(), docs.size(), "Done");
 		}
 	}
 	

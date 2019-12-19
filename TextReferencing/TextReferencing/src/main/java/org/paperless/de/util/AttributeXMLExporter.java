@@ -5,6 +5,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLOutputFactory;
@@ -89,6 +90,8 @@ public class AttributeXMLExporter implements Closeable {
 		}
 		
 		xml.writeStartElement("attribute");
+		
+		
 		
 		writeElement("name", name);
 		writeElement("page", attribute.getPageNum());

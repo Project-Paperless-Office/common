@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -159,7 +160,12 @@ public class TextStripper extends PDFTextStripper {
 			for (PdfString text : texts) {
 				if (Math.abs(attr.xStart - text.getFirstX()) <= xTol) {
 					if (Math.abs(attr.yStart - text.getFirstY()) <= yTol) {
-						ret.put(attr.name, text.getText());
+						String s = text.getText();
+						if (attr.removePattern != null) {
+							Matcher ma = attr.removePattern.matcher(s);
+							s = ma.replaceFirst("");
+						}
+						ret.put(attr.name, s.trim());
 						continue ATTRLOOP;
 					}
 				}

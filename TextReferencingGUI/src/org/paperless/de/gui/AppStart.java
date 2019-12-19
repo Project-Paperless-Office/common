@@ -1,14 +1,5 @@
 package org.paperless.de.gui;
 
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.TableItem;
-
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
@@ -19,31 +10,43 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Text;
-import org.paperless.de.ApplyTemplate;
-import org.paperless.de.ApplyTemplate.OutputLister;
-import org.paperless.de.CreateTemplate.AttributeSelector;
-import org.paperless.de.CreateTemplate;
-import org.xml.sax.SAXException;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FormAttachment;
-import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Text;
+import org.paperless.de.ApplyTemplate;
+import org.paperless.de.ApplyTemplate.OutputLister;
+import org.paperless.de.CreateTemplate.AttributeSelector;
+import org.paperless.de.util.ProgressListener;
+import org.paperless.de.CreateTemplate;
+import org.xml.sax.SAXException;
+import org.eclipse.swt.widgets.ProgressBar;
 
-public class AppStart extends Composite implements OutputLister, AttributeSelector {
+public class AppStart extends Composite implements OutputLister, AttributeSelector, ProgressListener {
 	private Table table;
 	private Table attrTable;
 	private Text textPdf;
 	private Text textXml;
+	private ProgressBar currentProgressBar;
+	private Label currentProgressMsg;
 	
 	private String inputPath;
 	
@@ -220,13 +223,14 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 					outputError("Datei angeben", "Die angegebene XML-Attributdatei konnte nicht erstellt werden.");
 					return;
 				}
-				CreateTemplate crea = new CreateTemplate(new File(inputPath), thisA, new File(attrFile));
+				CreateTemplate crea = new CreateTemplate(new File(inputPath), thisA, thisA, new File(attrFile));
 				try {
 					crea.parse();
 					crea.lookForSimilarities();
 				} catch (Exception ex) {
 					ex.printStackTrace();
 				}
+				textXml.setText(attrFile);
 			}
 		});
 		
@@ -236,7 +240,7 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 		fd_btnAnwenden.top = new FormAttachment(0, 78);
 		fd_btnAnwenden.left = new FormAttachment(0, 123);
 		btnAnwenden.setLayoutData(fd_btnAnwenden);
-		btnAnwenden.addMouseListener(new MouseAdapter() {
+		btnAnwenden.addMouseListener(new MouseAdapter() {			
 			@Override
 			public void mouseDown(MouseEvent e) {
 				if (inputPath == null || inputPath.isEmpty()) {
@@ -248,7 +252,8 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 							+ " oder neu erstellen.");
 					return;
 				}
-				ApplyTemplate appl = new ApplyTemplate(new File(inputPath), new File(xmlPath), thisA);
+				
+				ApplyTemplate appl = new ApplyTemplate(new File(inputPath), new File(xmlPath), thisA, thisA);
 				try {
 					appl.readAttributes();
 				} catch (ParserConfigurationException | SAXException | IOException e2) {
@@ -264,6 +269,25 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 			}
 		});
 		btnAnwenden.setText("Anwenden");
+		
+		ProgressBar progressBar = new ProgressBar(this, SWT.NONE);
+		FormData fd_progressBar = new FormData();
+		fd_progressBar.left = new FormAttachment(textPdf, -199);
+		fd_progressBar.top = new FormAttachment(btnAnwenden, 0, SWT.TOP);
+		fd_progressBar.right = new FormAttachment(textPdf, 0, SWT.RIGHT);
+		progressBar.setLayoutData(fd_progressBar);
+		
+		currentProgressBar = progressBar;
+		
+		Label lblProgress = new Label(this, SWT.NONE);
+		FormData fd_lblProgress = new FormData();
+		fd_lblProgress.width = 500;
+		fd_lblProgress.top = new FormAttachment(table, 2);
+		fd_lblProgress.left = new FormAttachment(table, 0, SWT.LEFT);
+		lblProgress.setLayoutData(fd_lblProgress);
+		lblProgress.setText("");
+		
+		currentProgressMsg = lblProgress;
 	}
 
 	@Override
@@ -425,5 +449,18 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 		
 		System.out.println("returning sth:" + ret);
 		return ret;
+	}
+
+	@Override
+	public void setProgress(int currentIndex, int totalNum, String msg) {
+		if (currentProgressBar != null) {
+			currentProgressBar.setMinimum(0);
+			currentProgressBar.setMaximum(totalNum);
+			currentProgressBar.setSelection(currentIndex);
+		}
+		
+		if (currentProgressMsg != null) {
+			currentProgressMsg.setText(msg);
+		}
 	}
 }
