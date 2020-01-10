@@ -36,6 +36,7 @@ public class ValueCsvExporter implements OutputLister, Closeable {
 					bw.write(attr + ';');
 				}
 				bw.newLine();
+				headerWritten = true;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

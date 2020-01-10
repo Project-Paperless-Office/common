@@ -46,6 +46,8 @@ public class ApplyTemplate {
 		 * 			Name und Wert der Attribute
 		 */
 		public void getFileValues(String fileName, Map<String, String> attValues);
+		
+		public void close() throws IOException;
 	};
 	
 	/**
@@ -210,8 +212,9 @@ public class ApplyTemplate {
 	 * 			SCHLÜSSEL (äußere Map): Dateiname
 	 * 			SCHLÜSSEL (innere Map): Attributname
 	 * 			WERT (innere Map): Attributwert
+	 * @throws IOException 
 	 */
-	public void outputValues(Map<String, Map<String, String>> values) {
+	public void outputValues(Map<String, Map<String, String>> values) throws IOException {
 		//Ausgabe auf Konsole
 		System.out.print("Dateiname           ");
 		//Ausgabe der Attributnamen
@@ -242,7 +245,8 @@ public class ApplyTemplate {
 		//Ausgabe in CSV-Datei
 		for (String file : values.keySet()) {
 			output.getFileValues(file, values.get(file));
-		}	
+		}
+		output.close();
 	}
 	
 	/**
@@ -272,8 +276,13 @@ public class ApplyTemplate {
 				ret.yEnd = Float.parseFloat(n.getTextContent());
 			} else if (n.getNodeName().equals("remove")) {
 				String remove = n.getTextContent();
-				if (remove != null) {
+				if (remove != null && !remove.isEmpty()) {
 					ret.removePattern = Pattern.compile(remove);
+				}
+			} else if (n.getNodeName().equals("select")) {
+				String select = n.getTextContent();
+				if (select != null && !select.isEmpty()) {
+					ret.selectPattern = Pattern.compile(select);
 				}
 			}
 		}

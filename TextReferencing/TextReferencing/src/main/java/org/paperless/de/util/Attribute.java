@@ -24,5 +24,19 @@ public class Attribute {
 	 */
 	public String name;
 	
+	/**
+	 * Regex-Pattern zum Entfernen einer Zeichenkette. Die auf das Pattern
+	 * matchende Zeichenkette wird aus dem Attributwert entfernt. Zur
+	 * Verbesserung der Performance wird statt des Regex-Strings das bereits
+	 * vorbereitete Pattern gespeichert, das dann lediglich auf die
+	 * Attributwerte angewendet wird.
+	 */
 	public Pattern removePattern;
+	
+	/**
+	 * Regex-Pattern zur Auswahl einer Zeichenkette. Die auf das Pattern
+	 * matchende Zeichenkette wird als Attributwert benutzt. Dieses Pattern
+	 * wird nach dem {@link #removePattern} benutzt.
+	 */
+	public Pattern selectPattern;
 }

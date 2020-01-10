@@ -133,9 +133,8 @@ public class CreateTemplate {
 				for (int i = 0; i < value.length; i++) {					
 					Scanner sc = new Scanner(System.in);
 					System.out.println("Bitte einen Namen für das Attribut mit dem Wert \"" +
-							value + "\" angeben (\"discard\" zum löschen).");
+							value[i] + "\" angeben (\"discard\" zum löschen).");
 					ret[i] = sc.nextLine();
-					sc.close();
 					if (ret[i].equalsIgnoreCase("discard")) {
 						ret[i] = null;
 					} else {
@@ -148,7 +147,7 @@ public class CreateTemplate {
 		readArgs(args);
 	}
 	
-	public CreateTemplate(File input, AttributeSelector selector, ProgressListener progress, File output, float xTolerance, float yTolerance) {
+	public CreateTemplate(File input, AttributeSelector selector, ProgressListener progress,File output, float xTolerance, float yTolerance) {
 		this.input = input;
 		this.selector = selector;
 		this.output = output;

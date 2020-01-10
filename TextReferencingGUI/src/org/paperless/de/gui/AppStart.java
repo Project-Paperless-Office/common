@@ -93,6 +93,11 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 		table.setLayoutData(fd_table);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
+//		final Menu tableMenu = new Menu(table);
+//		table.setMenu(tableMenu);
+//		final MenuItem miRemove = new MenuItem(tableMenu, SWT.PUSH);
+//		miRemove.setText("Remove-Regex hinzufügen");
+		
 		
 		table.addMouseListener(new MouseAdapter() {
 			@Override
@@ -108,7 +113,7 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 				}
 			}
 		});
-		
+
 		Label lblPdfverzeichnis = new Label(this, SWT.NONE);
 		FormData fd_lblPdfverzeichnis = new FormData();
 		fd_lblPdfverzeichnis.right = new FormAttachment(0, 117);
@@ -462,5 +467,10 @@ public class AppStart extends Composite implements OutputLister, AttributeSelect
 		if (currentProgressMsg != null) {
 			currentProgressMsg.setText(msg);
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		//wird am Ende des Outputs gerufen
 	}
 }

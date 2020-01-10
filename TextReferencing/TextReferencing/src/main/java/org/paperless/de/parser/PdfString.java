@@ -33,9 +33,6 @@ public class PdfString {
 	 */
 	private int pageNum;
 	
-	//TODO Regex in Template Creation einfügen
-	private Pattern removeRegex;
-	
 	/**
 	 * Konstruktor, wenn der Text bekannt ist
 	 * @param text

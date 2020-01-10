@@ -89,9 +89,7 @@ public class AttributeXMLExporter implements Closeable {
 			throw new IOException("This XML-Exporter has already been closed");
 		}
 		
-		xml.writeStartElement("attribute");
-		
-		
+		xml.writeStartElement("attribute");		
 		
 		writeElement("name", name);
 		writeElement("page", attribute.getPageNum());

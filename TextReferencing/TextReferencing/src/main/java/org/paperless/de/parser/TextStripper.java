@@ -120,6 +120,10 @@ public class TextStripper extends PDFTextStripper {
 			String textString = text.getText();
 			
 			for (PdfString otherText : te.getTexts()) {
+				if (text.getPageNum() != otherText.getPageNum()) {
+					continue;
+				}
+				
 				if (Math.abs(xStart - otherText.getFirstX()) > xTol) {
 					continue;
 				}
@@ -164,6 +168,14 @@ public class TextStripper extends PDFTextStripper {
 						if (attr.removePattern != null) {
 							Matcher ma = attr.removePattern.matcher(s);
 							s = ma.replaceFirst("");
+						}
+						if (attr.selectPattern != null) {
+							Matcher ma = attr.selectPattern.matcher(s);
+							if (ma.find()) {
+								s = ma.group();
+							} else {
+								s = "";
+							}
 						}
 						ret.put(attr.name, s.trim());
 						continue ATTRLOOP;
