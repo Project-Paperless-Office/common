@@ -1,18 +1,13 @@
 package org.paperless.de.util;
 
-import java.io.BufferedWriter;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.regex.Pattern;
+import org.paperless.de.CreateTemplate;
+import org.paperless.de.parser.PdfString;
 
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-
-import org.paperless.de.parser.PdfString;
+import java.io.*;
 
 /**
  * Exporter für Attribute im XML-Format. Nutzung: 
@@ -48,7 +43,7 @@ public class AttributeXMLExporter implements Closeable {
 	 * gibt an, ob die dazugehörigen I/O-Schreibklassen bereits geschlossen
 	 * wurden.
 	 */
-	private boolean closed = false;
+	private boolean closed;
 
 	/**
 	 * Konstruktor für die XML-Ausgabeklasse. Öffnet die Ausgabestreams und beginnt den XML-Baum
@@ -73,8 +68,6 @@ public class AttributeXMLExporter implements Closeable {
 	
 	/**
 	 * Schreiben eines Attributs in den XML-Baum
-	 * @param name
-	 * 			Name des Attributs
 	 * @param attribute
 	 * 			Beispielwert für das Attribut, wird genutzt, um die
 	 * 			Seitenzahl und die Koordinatenbox zu erhalten.
@@ -84,19 +77,25 @@ public class AttributeXMLExporter implements Closeable {
 	 * 			Fehler beim Schreiben in die Datei oder der Stream wurde
 	 * 			bereits geschlossen
 	 */
-	public void writeAttribute (String name, PdfString attribute) throws XMLStreamException, IOException {
+	public void writeAttribute (CreateTemplate.AttributeProperty attributeProperty, PdfString attribute) throws XMLStreamException, IOException {
 		if (closed) {
 			throw new IOException("This XML-Exporter has already been closed");
 		}
 		
-		xml.writeStartElement("attribute");		
-		
-		writeElement("name", name);
+		xml.writeStartElement("attribute");
+
+		writeElement("name", attributeProperty.name);
 		writeElement("page", attribute.getPageNum());
 		writeElement("x-start", attribute.getFirstX());
 		writeElement("y-start", attribute.getFirstY());
 		writeElement("x-end", attribute.getLastX());
 		writeElement("y-end", attribute.getLastY());
+		if (attributeProperty.removeRegex != null) {
+			writeElement("remove", attributeProperty.removeRegex);
+		}
+		if (attributeProperty.selectRegex != null) {
+			writeElement("select", attributeProperty.selectRegex);
+		}
 		
 		xml.writeEndElement();
 	}

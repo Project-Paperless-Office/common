@@ -1,5 +1,5 @@
 package org.paperless.de.util;
 
 public interface ProgressListener {
-	public void setProgress(int currentIndex, int totalNum, String msg);
+	void setProgress(int currentIndex, int totalNum, String msg);
 }

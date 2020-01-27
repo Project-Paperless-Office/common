@@ -1,13 +1,12 @@
 package org.paperless.de.parser;
 
-import java.util.List;
-import java.util.regex.Pattern;
-
 import org.apache.pdfbox.text.TextPosition;
+
+import java.util.List;
 
 /**
  * Speicherstruktur für einen PDF-Text. Stellt eine Zeile dar, sollte durch
- * {@link TextStripper#splitText} spaltenweise getrennt sein.
+ * {@link TextStripper} spaltenweise getrennt sein.
  * 
  * @author nba
  */
@@ -66,6 +65,7 @@ public class PdfString {
 		//Text wird aus den einzelnen Glyphen gebildet
 		this.text = "";
 		for (TextPosition p : positions) {
+			//noinspection StringConcatenationInLoop
 			this.text += p.getUnicode();
 		}
 		

@@ -1,5 +1,10 @@
 package org.paperless.de.parser;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.text.TextPosition;
+import org.paperless.de.util.Attribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -9,11 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
-
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.text.TextPosition;
-import org.paperless.de.util.Attribute;
 
 /**
  * Klasse zum Parsen und Speichern der Texte mit PDFBox. Stellt immer ein
@@ -42,7 +42,7 @@ public class TextStripper extends PDFTextStripper {
 	 */
 	public TextStripper() throws IOException {
 		super();
-		this.texts = new ArrayList<PdfString>();
+		this.texts = new ArrayList<>();
 	}
 	
 	/**
@@ -74,7 +74,7 @@ public class TextStripper extends PDFTextStripper {
 	@Override
 	public void writeString(String text, List<TextPosition> positions) {
 		if (texts == null) {
-			this.texts = new ArrayList<PdfString>();
+			this.texts = new ArrayList<>();
 		}
 		
 		if (!text.trim().isEmpty()) {
@@ -112,7 +112,7 @@ public class TextStripper extends PDFTextStripper {
 	 * 			Liste der unterschiedlichen Texte
 	 */
 	public List<PdfString> compare(TextStripper te, float xTol, float yTol) {
-		List<PdfString> ret = new ArrayList<PdfString>();
+		List<PdfString> ret = new ArrayList<>();
 		
 		for (PdfString text : texts) {
 			float xStart = text.getFirstX();
@@ -159,7 +159,7 @@ public class TextStripper extends PDFTextStripper {
 	 * 			WERT: Attributwert aus dem Dokument oder "N/A"
 	 */
 	public Map<String, String> getAttrValues(List<Attribute> attributes, float xTol, float yTol) {
-		HashMap<String, String> ret = new HashMap<String, String>();
+		HashMap<String, String> ret = new HashMap<>();
 		ATTRLOOP:for (Attribute attr : attributes) {
 			for (PdfString text : texts) {
 				if (Math.abs(attr.xStart - text.getFirstX()) <= xTol) {
@@ -199,15 +199,15 @@ public class TextStripper extends PDFTextStripper {
 	 * 			der Originalliste vorkommen. 
 	 */
 	private List<List<TextPosition>> splitText(List<TextPosition> position) {
-		List<List<TextPosition>> ret = new ArrayList<List<TextPosition>>();
-		List<TextPosition> currentList = new ArrayList<TextPosition>();
+		List<List<TextPosition>> ret = new ArrayList<>();
+		List<TextPosition> currentList = new ArrayList<>();
 		ret.add(currentList);
 		
 		float lastXEnd = -1f;
 		for (TextPosition pos : position) {
 			if (!(lastXEnd < 0)) {
 				if (Math.abs(pos.getX() - lastXEnd) > 1) {
-					currentList = new ArrayList<TextPosition>();
+					currentList = new ArrayList<>();
 					ret.add(currentList);
 				}
 			}

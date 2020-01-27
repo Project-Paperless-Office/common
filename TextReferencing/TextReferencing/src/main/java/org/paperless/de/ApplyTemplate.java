@@ -1,18 +1,5 @@
 package org.paperless.de;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.TextStripper;
 import org.paperless.de.util.Attribute;
@@ -22,6 +9,18 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Klasse zur Anwendung eines Templates auf eine Menge PDF-Dokumente
@@ -37,7 +36,7 @@ public class ApplyTemplate {
 	 * @author nba
 	 */
 	public interface OutputLister {
-		
+
 		/**
 		 * Methode zum Erhalt von Werten aus der Datei
 		 * @param fileName
@@ -45,11 +44,11 @@ public class ApplyTemplate {
 		 * @param attValues
 		 * 			Name und Wert der Attribute
 		 */
-		public void getFileValues(String fileName, Map<String, String> attValues);
-		
-		public void close() throws IOException;
-	};
-	
+		void getFileValues(String fileName, Map<String, String> attValues);
+
+		void close() throws IOException;
+	}
+
 	/**
 	 * PDF-Eingabeordner
 	 */
@@ -151,7 +150,7 @@ public class ApplyTemplate {
 	 * 			Fehler beim Lesen der XML-Datei
 	 */
 	public void readAttributes() throws ParserConfigurationException, SAXException, IOException {		
-		attrList = new ArrayList<Attribute>();
+		attrList = new ArrayList<>();
 		//Parsen der XML
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
@@ -175,15 +174,14 @@ public class ApplyTemplate {
 		//Schlüssel der äußeren Map: Dateiname
 		//Schlüssel der inneren Map: Attributname
 		//Wert der inneren Map: Attributwert
-		Map<String, Map<String, String>> fileValues = new HashMap<String, Map<String, String>>();
+		Map<String, Map<String, String>> fileValues = new HashMap<>();
 		
 		//Filter, um nur PDF-Dateien auszuwählen
-		FilenameFilter filter = new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".pdf") || name.endsWith(".PDF");
-			}
-		};
+		FilenameFilter filter = (dir, name) -> name.endsWith(".pdf") || name.endsWith(".PDF");
 		File[] pdfFiles = pdf.listFiles(filter);
+		if (pdfFiles == null) {
+			throw new IOException("PDF input directory could not be opened or read");
+		}
 		for (int i = 0; i < pdfFiles.length; i++) {			
 			File file = pdfFiles[i];
 			if (progress != null) {
@@ -208,11 +206,11 @@ public class ApplyTemplate {
 	/**
 	 * Methode zur Ausgabe der Attributwerte
 	 * @param values
-	 * 			Attributwerte<br>
-	 * 			SCHLÜSSEL (äußere Map): Dateiname
-	 * 			SCHLÜSSEL (innere Map): Attributname
-	 * 			WERT (innere Map): Attributwert
-	 * @throws IOException 
+	 * 			Attributwerte:<br>
+	 * 			SCHLÜSSEL (äußere Map): Dateiname<br>
+	 * 			SCHLÜSSEL (innere Map): Attributname<br>
+	 * 			WERT (innere Map): Attributwert<br>
+	 * @throws IOException Fehler bei der Ausgabe
 	 */
 	public void outputValues(Map<String, Map<String, String>> values) throws IOException {
 		//Ausgabe auf Konsole
@@ -262,28 +260,37 @@ public class ApplyTemplate {
 		Attribute ret = new Attribute();
 		for (int i = 0; i < attrProp.getLength(); i++) {
 			Node n = attrProp.item(i);
-			if (n.getNodeName().equals("name")) {
-				ret.name = n.getTextContent();
-			} else if (n.getNodeName().equals("page")) {				
-				ret.page = Integer.parseInt(n.getTextContent());
-			} else if (n.getNodeName().equals("x-start")) {
-				ret.xStart = Float.parseFloat(n.getTextContent());
-			} else if (n.getNodeName().equals("y-start")) {
-				ret.yStart = Float.parseFloat(n.getTextContent());
-			} else if (n.getNodeName().equals("x-end")) {
-				ret.xEnd = Float.parseFloat(n.getTextContent());
-			} else if (n.getNodeName().equals("y-end")) {
-				ret.yEnd = Float.parseFloat(n.getTextContent());
-			} else if (n.getNodeName().equals("remove")) {
-				String remove = n.getTextContent();
-				if (remove != null && !remove.isEmpty()) {
-					ret.removePattern = Pattern.compile(remove);
-				}
-			} else if (n.getNodeName().equals("select")) {
-				String select = n.getTextContent();
-				if (select != null && !select.isEmpty()) {
-					ret.selectPattern = Pattern.compile(select);
-				}
+			switch (n.getNodeName()) {
+				case "name":
+					ret.name = n.getTextContent();
+					break;
+				case "page":
+					ret.page = Integer.parseInt(n.getTextContent());
+					break;
+				case "x-start":
+					ret.xStart = Float.parseFloat(n.getTextContent());
+					break;
+				case "y-start":
+					ret.yStart = Float.parseFloat(n.getTextContent());
+					break;
+				case "x-end":
+					ret.xEnd = Float.parseFloat(n.getTextContent());
+					break;
+				case "y-end":
+					ret.yEnd = Float.parseFloat(n.getTextContent());
+					break;
+				case "remove":
+					String remove = n.getTextContent();
+					if (remove != null && !remove.isEmpty()) {
+						ret.removePattern = Pattern.compile(remove);
+					}
+					break;
+				case "select":
+					String select = n.getTextContent();
+					if (select != null && !select.isEmpty()) {
+						ret.selectPattern = Pattern.compile(select);
+					}
+					break;
 			}
 		}
 		return ret;
@@ -360,91 +367,99 @@ public class ApplyTemplate {
 		}
 		
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].equals("--pdfPath")) {
-				if (++i < args.length) {
-					pdf = new File(args[i]);
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --pdfPath muss ein gültiges Verzeichnis angegeben werden.");
-				}
-			} else if (args[i].equals("--attributes")) {
-				if (++i < args.length) {
-					xml = new File(args[i]);
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --attributes muss eine gültige Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--output")) {
-				if (++i < args.length) {
-					output = new File(args[i]);
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --output muss eine gültige Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--tolerance")) {
-				if (xTol > 0 || yTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						xTol = Float.parseFloat(args[i]);
-						yTol = xTol;
-					} catch (NumberFormatException e) {
+			switch (args[i]) {
+				case "--pdfPath":
+					if (++i < args.length) {
+						pdf = new File(args[i]);
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Nach --tolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Nach --pdfPath muss ein gültiges Verzeichnis angegeben werden.");
 					}
-					if (xTol < 0) {
+					break;
+				case "--attributes":
+					if (++i < args.length) {
+						xml = new File(args[i]);
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Die Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Nach --attributes muss eine gültige Datei angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl angegeben werden.");
-				}
-			} else if (args[i].equals("--xTolerance")) {
-				if (xTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						xTol = Float.parseFloat(args[i]);
-					} catch (NumberFormatException e) {
+					break;
+				case "--output":
+					if (++i < args.length) {
+						output = new File(args[i]);
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Nach --xTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Nach --output muss eine gültige Datei angegeben werden.");
 					}
-					if (xTol < 0) {
+					break;
+				case "--tolerance":
+					if (xTol > 0 || yTol > 0) {
 						printUsage();
-						throw new IllegalArgumentException("Die X-Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --xTolerance muss eine Gleitkommazahl Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--yTolerance")) {
-				if (yTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						yTol = Float.parseFloat(args[i]);
-					} catch (NumberFormatException e) {
+					if (++i < args.length) {
+						try {
+							xTol = Float.parseFloat(args[i]);
+							//noinspection SuspiciousNameCombination
+							yTol = xTol;
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --tolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (xTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die Toleranz darf nicht negativ sein.");
+						}
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Nach --yTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl angegeben werden.");
 					}
-					if (yTol < 0) {
+					break;
+				case "--xTolerance":
+					if (xTol > 0) {
 						printUsage();
-						throw new IllegalArgumentException("Die Y-Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --yTolerance muss eine Gleitkommazahl Datei angegeben werden.");
-				}
+					if (++i < args.length) {
+						try {
+							xTol = Float.parseFloat(args[i]);
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --xTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (xTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die X-Toleranz darf nicht negativ sein.");
+						}
+					} else {
+						printUsage();
+						throw new IllegalArgumentException("Nach --xTolerance muss eine Gleitkommazahl Datei angegeben werden.");
+					}
+					break;
+				case "--yTolerance":
+					if (yTol > 0) {
+						printUsage();
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
+					}
+					if (++i < args.length) {
+						try {
+							yTol = Float.parseFloat(args[i]);
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --yTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (yTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die Y-Toleranz darf nicht negativ sein.");
+						}
+					} else {
+						printUsage();
+						throw new IllegalArgumentException("Nach --yTolerance muss eine Gleitkommazahl Datei angegeben werden.");
+					}
+					break;
 			}
 		}
 		

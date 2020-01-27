@@ -1,30 +1,32 @@
 package org.paperless.de;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.paperless.de.parser.PdfString;
 import org.paperless.de.parser.TextStripper;
 import org.paperless.de.util.AttributeXMLExporter;
 import org.paperless.de.util.ProgressListener;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.*;
+
 /**
  * Klasse zur Erstellung einer XML-Templatedatei
  * @author nba
  */
 public class CreateTemplate {
+
+	public static class AttributeProperty {
+		public String name;
+		public String removeRegex;
+		public String selectRegex;
+	}
 	
 	public interface AttributeSelector {
-		public String[] getAttributes(String[] values);
-	};
-	
+		AttributeProperty[] getAttributes(String[] values);
+	}
+
 	/**
 	 * Eingabeverzeichnis mit den PDF-Dateien
 	 */
@@ -60,7 +62,7 @@ public class CreateTemplate {
 	 * Wrapper-Klasse für ein PDF-Dokument. Speichert Dateiname und
 	 * geparstes Dokument
 	 */
-	private class DocWrapper {
+	private static class DocWrapper {
 		/**
 		 * mit PDFBox geparstes Dokument
 		 */
@@ -82,7 +84,7 @@ public class CreateTemplate {
 			this.doc = PDDocument.load(file);
 			this.filename = file.getName();
 		}
-	};
+	}
 	
 	/**
 	 * Hauptmethode
@@ -120,29 +122,25 @@ public class CreateTemplate {
 	 * <tr><td>--xTolerance</td><td>Toleranz in X-Richtung beim Vergleich der Textpositionen</td></tr>
 	 * <tr><td>--xTolerance</td><td>Toleranz in Y-Richtung beim Vergleich der Textpositionen</td></tr> 
 	 * </table>
-	 * @throws IOException
-	 * 			Fehler beim Erstellen der Ausgabedatei
 	 * @throws IllegalArgumentException
 	 * 			Ungültige Kommandozeilenparameter
 	 */
-	public CreateTemplate(String[] args) throws IOException, IllegalArgumentException {
-		this.selector = new AttributeSelector() {			
-			@Override
-			public String[] getAttributes(String[] value) {
-				String[] ret = new String[value.length];
-				for (int i = 0; i < value.length; i++) {					
-					Scanner sc = new Scanner(System.in);
-					System.out.println("Bitte einen Namen für das Attribut mit dem Wert \"" +
-							value[i] + "\" angeben (\"discard\" zum löschen).");
-					ret[i] = sc.nextLine();
-					if (ret[i].equalsIgnoreCase("discard")) {
-						ret[i] = null;
-					} else {
-						ret[i] = ret[i].trim();
-					}
+	public CreateTemplate(String[] args) throws IllegalArgumentException {
+		this.selector = value -> {
+			AttributeProperty[] ret = new AttributeProperty[value.length];
+			for (int i = 0; i < value.length; i++) {
+				Scanner sc = new Scanner(System.in);
+				System.out.println("Bitte einen Namen für das Attribut mit dem Wert \"" +
+						value[i] + "\" angeben (\"discard\" zum löschen).");
+				String name = sc.nextLine();
+				if (name.equalsIgnoreCase("discard")) {
+					ret[i] = null;
+				} else {
+					ret[i] = new AttributeProperty();
+					ret[i].name = name;
 				}
-				return ret;
 			}
+			return ret;
 		};
 		readArgs(args);
 	}
@@ -174,11 +172,7 @@ public class CreateTemplate {
 	 */
 	public void parse() throws IOException {		
 		List <DocWrapper> docs = new ArrayList<DocWrapper>();
-		FilenameFilter filter = new FilenameFilter() {
-			public boolean accept(File dir, String name) {
-				return name.endsWith("pdf");
-			}
-		};
+		FilenameFilter filter = (dir, name) -> name.endsWith("pdf");
 		
 		File[] pdfFileList = input.listFiles(filter);
 		for (int i = 0; i < pdfFileList.length; i++) {
@@ -255,15 +249,15 @@ public class CreateTemplate {
 	 * 			Fehler beim XML-Export, s. {@link AttributeXMLExporter}
 	 */
 	private void exportAttributes(List<PdfString> attributes) throws Exception {		
-		try (AttributeXMLExporter xml = new AttributeXMLExporter(output);){
+		try (AttributeXMLExporter xml = new AttributeXMLExporter(output)){
 			
 			String[] attributeValues = new String[attributes.size()];
 			for (int i = 0; i < attributes.size(); i++) {
 				attributeValues[i] = attributes.get(i).getText();
 			}
-			String[] attNames = selector.getAttributes(attributeValues);
+			AttributeProperty[] attNames = selector.getAttributes(attributeValues);
 			for (int i = 0; i < attributes.size() && i < attNames.length; i++) {
-				if (attNames[i] != null && !attNames[i].isEmpty()) {
+				if (attNames[i] != null && attNames[i].name != null && !attNames[i].name.isEmpty()) {
 					xml.writeAttribute(attNames[i], attributes.get(i));
 				}
 			}
@@ -337,84 +331,90 @@ public class CreateTemplate {
 		}
 		
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].equals("--input")) {
-				if (++i < args.length) {
-					input = new File(args[i]);
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --input muss ein gültiges Verzeichnis angegeben werden.");
-				}
-			} else if (args[i].equals("--output")) {
-				if (++i < args.length) {
-					output = new File(args[i]);
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --output muss eine gültige Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--tolerance")) {
-				if (xTol > 0 || yTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						xTol = Float.parseFloat(args[i]);
-						yTol = xTol;
-					} catch (NumberFormatException e) {
+			switch (args[i]) {
+				case "--input":
+					if (++i < args.length) {
+						input = new File(args[i]);
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Nach --tolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Nach --input muss ein gültiges Verzeichnis angegeben werden.");
 					}
-					if (xTol < 0) {
+					break;
+				case "--output":
+					if (++i < args.length) {
+						output = new File(args[i]);
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Die Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Nach --output muss eine gültige Datei angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--xTolerance")) {
-				if (xTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						xTol = Float.parseFloat(args[i]);
-					} catch (NumberFormatException e) {
+					break;
+				case "--tolerance":
+					if (xTol > 0 || yTol > 0) {
 						printUsage();
-						throw new IllegalArgumentException("Nach --xTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
 					}
-					if (xTol < 0) {
+					if (++i < args.length) {
+						try {
+							xTol = Float.parseFloat(args[i]);
+							yTol = xTol;
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --tolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (xTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die Toleranz darf nicht negativ sein.");
+						}
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Die X-Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Nach --tolerance muss eine Gleitkommazahl Datei angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --xTolerance muss eine Gleitkommazahl Datei angegeben werden.");
-				}
-			} else if (args[i].equals("--yTolerance")) {
-				if (yTol > 0) {
-					printUsage();
-					throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
-							+ "--xTolerance oder --yTolerance angegeben werden.");
-				}
-				if (++i < args.length) {
-					try {
-						yTol = Float.parseFloat(args[i]);
-					} catch (NumberFormatException e) {
+					break;
+				case "--xTolerance":
+					if (xTol > 0) {
 						printUsage();
-						throw new IllegalArgumentException("Nach --yTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
 					}
-					if (yTol < 0) {
+					if (++i < args.length) {
+						try {
+							xTol = Float.parseFloat(args[i]);
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --xTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (xTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die X-Toleranz darf nicht negativ sein.");
+						}
+					} else {
 						printUsage();
-						throw new IllegalArgumentException("Die Y-Toleranz darf nicht negativ sein.");
+						throw new IllegalArgumentException("Nach --xTolerance muss eine Gleitkommazahl Datei angegeben werden.");
 					}
-				} else {
-					printUsage();
-					throw new IllegalArgumentException("Nach --yTolerance muss eine Gleitkommazahl Datei angegeben werden.");
-				}
+					break;
+				case "--yTolerance":
+					if (yTol > 0) {
+						printUsage();
+						throw new IllegalArgumentException("Bei Angabe von --tolerance darf keine Einzeltoleranz mit "
+								+ "--xTolerance oder --yTolerance angegeben werden.");
+					}
+					if (++i < args.length) {
+						try {
+							yTol = Float.parseFloat(args[i]);
+						} catch (NumberFormatException e) {
+							printUsage();
+							throw new IllegalArgumentException("Nach --yTolerance muss eine gültige Gleitkommazahl angegeben werden.");
+						}
+						if (yTol < 0) {
+							printUsage();
+							throw new IllegalArgumentException("Die Y-Toleranz darf nicht negativ sein.");
+						}
+					} else {
+						printUsage();
+						throw new IllegalArgumentException("Nach --yTolerance muss eine Gleitkommazahl Datei angegeben werden.");
+					}
+					break;
 			}
 		}
 		

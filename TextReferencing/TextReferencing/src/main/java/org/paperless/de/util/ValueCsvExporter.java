@@ -1,14 +1,10 @@
 package org.paperless.de.util;
 
-import java.io.BufferedWriter;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import org.paperless.de.ApplyTemplate.OutputLister;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Map;
-
-import org.paperless.de.ApplyTemplate.OutputLister;
 
 public class ValueCsvExporter implements OutputLister, Closeable {
 	
@@ -16,9 +12,9 @@ public class ValueCsvExporter implements OutputLister, Closeable {
 	
 	private FileWriter fw;
 	
-	private ArrayList<String> attributes = new ArrayList<String>();
+	private ArrayList<String> attributes = new ArrayList<>();
 	
-	private boolean headerWritten = false;
+	private boolean headerWritten;
 	
 	public ValueCsvExporter(File csv) throws IOException {
 		this.fw = new FileWriter(csv);
@@ -28,7 +24,7 @@ public class ValueCsvExporter implements OutputLister, Closeable {
 	@Override
 	public void getFileValues(String fileName, Map<String, String> attValues) {
 		if (!headerWritten) {
-			attributes = new ArrayList<String>();
+			attributes = new ArrayList<>();
 			try {
 				bw.write("file;");
 				for (String attr : attValues.keySet()) {
@@ -53,7 +49,7 @@ public class ValueCsvExporter implements OutputLister, Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		try {
 			bw.close();
 		} catch (IOException e) {
